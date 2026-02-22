@@ -1,20 +1,13 @@
 // app/(tabs)/index.tsx
-import { useState, useCallback } from "react";
-import { View, ScrollView, TouchableOpacity } from "react-native";
-import {
-  Text,
-  Divider,
-  Portal,
-  Dialog,
-  Button,
-  TextInput,
-} from "react-native-paper";
-import { useFocusEffect } from "expo-router";
 import CartSidebar from "@/components/CartSideBar";
-import { itemService } from "@/services/itemService";
-import { categoryService } from "@/services/categoryService";
-import { subcategoryService } from "@/services/subcategoryService";
 import { useCartStore } from "@/context/CartItem";
+import { categoryService } from "@/services/categoryService";
+import { itemService } from "@/services/itemService";
+import { subcategoryService } from "@/services/subcategoryService";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Button, Dialog, Divider, Portal, Text } from "react-native-paper";
 
 interface Item {
   id: number;
@@ -30,17 +23,29 @@ interface Option {
   name: string;
 }
 
-// ── Green Numpad ──────────────────────────────────────────────────────────────
-function PriceNumpad({
+// ── Numpad ────────────────────────────────────────────────────────────────────
+function Numpad({
   value,
   onChange,
+  isPrice,
 }: {
   value: string;
   onChange: (v: string) => void;
+  isPrice: boolean;
 }) {
   const handleKey = (key: string) => {
     if (key === "⌫") {
       onChange(value.slice(0, -1));
+      return;
+    }
+    if (!isPrice) {
+      // qty: integers only, no leading zeros
+      if (key === ".") return;
+      if (value === "0") {
+        onChange(key);
+        return;
+      }
+      onChange(value + key);
       return;
     }
     if (key === "." && value.includes(".")) return;
@@ -48,39 +53,15 @@ function PriceNumpad({
     onChange(value + key);
   };
 
-  const FAST = [20, 50, 100, 200, 500];
+  const FAST_PRICE = [20, 50, 100, 200, 500];
+  const FAST_QTY = [1, 2, 3, 5, 10];
+  const fastValues = isPrice ? FAST_PRICE : FAST_QTY;
 
   return (
     <View style={{ gap: 8 }}>
-      {/* Display */}
-      <View
-        style={{
-          backgroundColor: "#f0fdf4",
-          borderWidth: 2,
-          borderColor: value ? "#16a34a" : "#d1fae5",
-          borderRadius: 10,
-          paddingHorizontal: 14,
-          paddingVertical: 10,
-        }}
-      >
-        <Text style={{ fontSize: 11, color: "#6b7280", letterSpacing: 1 }}>
-          UNIT PRICE
-        </Text>
-        <Text
-          style={{
-            fontSize: 28,
-            fontWeight: "bold",
-            color: value ? "#111827" : "#9ca3af",
-            letterSpacing: 1,
-          }}
-        >
-          ₱{value === "" ? "0.00" : parseFloat(value).toFixed(2)}
-        </Text>
-      </View>
-
       {/* Fast amounts */}
       <View style={{ flexDirection: "row", gap: 6 }}>
-        {FAST.map((amt) => (
+        {fastValues.map((amt) => (
           <TouchableOpacity
             key={amt}
             onPress={() => onChange(amt.toString())}
@@ -101,7 +82,7 @@ function PriceNumpad({
                 color: value === amt.toString() ? "white" : "#16a34a",
               }}
             >
-              ₱{amt}
+              {isPrice ? `₱${amt}` : `×${amt}`}
             </Text>
           </TouchableOpacity>
         ))}
@@ -134,6 +115,7 @@ function PriceNumpad({
               <TouchableOpacity
                 key={key}
                 onPress={() => handleKey(key)}
+                disabled={key === "." && !isPrice}
                 style={{
                   flex: 1,
                   paddingVertical: 14,
@@ -142,9 +124,11 @@ function PriceNumpad({
                   backgroundColor:
                     key === "⌫"
                       ? "#fef2f2"
-                      : ki % 2 === 0
-                        ? "#f0fdf4"
-                        : "#f9fafb",
+                      : key === "." && !isPrice
+                        ? "#e5e7eb"
+                        : ki % 2 === 0
+                          ? "#f0fdf4"
+                          : "#f9fafb",
                   borderLeftWidth: ki === 0 ? 0 : 1,
                   borderLeftColor: "#d1fae5",
                 }}
@@ -153,7 +137,12 @@ function PriceNumpad({
                   style={{
                     fontSize: 20,
                     fontWeight: "600",
-                    color: key === "⌫" ? "#ef4444" : "#15803d",
+                    color:
+                      key === "⌫"
+                        ? "#ef4444"
+                        : key === "." && !isPrice
+                          ? "#9ca3af"
+                          : "#15803d",
                   }}
                 >
                   {key}
@@ -181,6 +170,7 @@ export default function OrderScreen() {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [qty, setQty] = useState("1");
   const [price, setPrice] = useState("");
+  const [activeInput, setActiveInput] = useState<"qty" | "price">("price");
 
   const addItem = useCartStore((s) => s.addItem);
 
@@ -214,6 +204,7 @@ export default function OrderScreen() {
     setSelectedItem(item);
     setQty("1");
     setPrice("");
+    setActiveInput("price");
   };
 
   const handleAddToCart = () => {
@@ -325,6 +316,17 @@ export default function OrderScreen() {
     return cards;
   };
 
+  // Shared display box style
+  const inputBox = (active: boolean) => ({
+    backgroundColor: active ? "#f0fdf4" : "#f9fafb",
+    borderWidth: 2,
+    borderColor: active ? "#16a34a" : "#e5e7eb",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flex: 1,
+  });
+
   return (
     <View style={{ flex: 1, flexDirection: "row" }}>
       {/* Left - Products */}
@@ -392,30 +394,66 @@ export default function OrderScreen() {
           onDismiss={() => setSelectedItem(null)}
           style={{
             alignSelf: "center",
-            width: 360,
+            width: 380,
             position: "absolute",
             left: "50%",
-            transform: [{ translateX: -180 }],
+            transform: [{ translateX: -190 }],
           }}
         >
           <Dialog.Title style={{ color: "#15803d", fontWeight: "bold" }}>
             {selectedItem?.name}
           </Dialog.Title>
-          <Dialog.Content style={{ gap: 12 }}>
-            {/* Qty stays as text input — it's just a small number */}
-            <TextInput
-              label="Quantity"
-              value={qty}
-              onChangeText={(text) => setQty(text.replace(/[^0-9]/g, ""))}
-              mode="outlined"
-              keyboardType="numeric"
-              outlineColor="#d1fae5"
-              activeOutlineColor="#16a34a"
-            />
 
-            {/* Numpad replaces the Unit Price TextInput */}
-            <PriceNumpad value={price} onChange={setPrice} />
+          <Dialog.Content style={{ gap: 12 }}>
+            {/* Tappable display inputs */}
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {/* Qty box */}
+              <TouchableOpacity
+                style={inputBox(activeInput === "qty")}
+                onPress={() => setActiveInput("qty")}
+              >
+                <Text
+                  style={{ fontSize: 11, color: "#6b7280", letterSpacing: 1 }}
+                >
+                  QUANTITY
+                </Text>
+                <Text
+                  style={{ fontSize: 26, fontWeight: "bold", color: "#111827" }}
+                >
+                  {qty || "0"}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Price box */}
+              <TouchableOpacity
+                style={inputBox(activeInput === "price")}
+                onPress={() => setActiveInput("price")}
+              >
+                <Text
+                  style={{ fontSize: 11, color: "#6b7280", letterSpacing: 1 }}
+                >
+                  UNIT PRICE
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 26,
+                    fontWeight: "bold",
+                    color: price ? "#111827" : "#9ca3af",
+                  }}
+                >
+                  ₱{price === "" ? "0.00" : parseFloat(price).toFixed(2)}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Single numpad — switches based on activeInput */}
+            <Numpad
+              value={activeInput === "qty" ? qty : price}
+              onChange={activeInput === "qty" ? setQty : setPrice}
+              isPrice={activeInput === "price"}
+            />
           </Dialog.Content>
+
           <Dialog.Actions>
             <Button onPress={() => setSelectedItem(null)} textColor="#6b7280">
               Cancel

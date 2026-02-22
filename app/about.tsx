@@ -1,10 +1,10 @@
 // app/about.tsx
-import { View } from "react-native";
-import { Text, Divider } from "react-native-paper";
+import { ScrollView, View } from "react-native";
+import { Divider, Text } from "react-native-paper";
 
 export default function AboutScreen() {
   return (
-    <View style={{ flex: 1, padding: 24, gap: 12 }}>
+    <ScrollView contentContainerStyle={{ padding: 24, gap: 12 }}>
       <Text variant="headlineSmall" style={{ fontWeight: "bold" }}>
         About
       </Text>
@@ -22,9 +22,10 @@ export default function AboutScreen() {
         <Row label="Developed by" value="Echo R." />
         <Row label="Year" value="2026" />
       </View>
-    </View>
+    </ScrollView>
   );
 }
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ flexDirection: "row", gap: 8 }}>

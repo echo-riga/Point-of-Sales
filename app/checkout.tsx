@@ -1,11 +1,12 @@
 // app/checkout.tsx
-import { useState, useEffect } from "react";
-import { View, ScrollView, TouchableOpacity } from "react-native";
-import { Text, Button, Divider, RadioButton } from "react-native-paper";
-import { router } from "expo-router";
+import CartSidebar from "@/components/CartSideBar";
 import { useCartStore } from "@/context/CartItem";
 import { paymentTypeService } from "@/services/paymentTypeService";
-import CartSidebar from "@/components/CartSideBar";
+import { transactionService } from "@/services/transactionService";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Button, Divider, RadioButton, Text } from "react-native-paper";
 
 interface PaymentType {
   id: number;
@@ -26,6 +27,7 @@ export default function CheckoutScreen() {
   );
   const [cash, setCash] = useState("");
   const [stage, setStage] = useState<Stage>("input");
+  const [finalChange, setFinalChange] = useState(0);
 
   useEffect(() => {
     const types = paymentTypeService.getAll() as PaymentType[];
@@ -39,7 +41,19 @@ export default function CheckoutScreen() {
   const canCharge = cashAmount >= totalPrice && selectedPaymentType !== null;
 
   const handleCharge = () => {
-    if (!canCharge) return;
+    if (!canCharge || selectedPaymentType === null) return;
+
+    transactionService.create({
+      paymentTypeId: selectedPaymentType,
+      items: items.map((i) => ({
+        id: i.id,
+        name: i.name,
+        price: i.price,
+        qty: i.qty,
+      })),
+    });
+
+    setFinalChange(cashAmount - totalPrice);
     setStage("paid");
   };
 
@@ -50,7 +64,6 @@ export default function CheckoutScreen() {
 
   const FAST_AMOUNTS = [20, 50, 100, 200, 500, 1000];
 
-  // ── PAID STAGE ──────────────────────────────────────────────────────────────
   if (stage === "paid") {
     return (
       <View style={{ flex: 1, flexDirection: "row" }}>
@@ -102,7 +115,7 @@ export default function CheckoutScreen() {
               <Divider />
               <Row
                 label="Change"
-                value={`₱${change.toFixed(2)}`}
+                value={`₱${finalChange.toFixed(2)}`}
                 valueStyle={{
                   color: "#16a34a",
                   fontWeight: "bold",
@@ -136,16 +149,13 @@ export default function CheckoutScreen() {
     );
   }
 
-  // ── INPUT STAGE ─────────────────────────────────────────────────────────────
   return (
     <View style={{ flex: 1, flexDirection: "row" }}>
       <CartSidebar readonly />
-
       <ScrollView
         style={{ flex: 2 }}
         contentContainerStyle={{ padding: 20, gap: 20 }}
       >
-        {/* Amount Due */}
         <View
           style={{
             backgroundColor: "#16a34a",
@@ -169,12 +179,10 @@ export default function CheckoutScreen() {
           </Text>
         </View>
 
-        {/* Cash received */}
         <View style={{ gap: 10 }}>
           <Text variant="labelLarge" style={{ color: "#374151" }}>
             Cash Received
           </Text>
-
           <View
             style={{
               borderWidth: 2,
@@ -197,17 +205,12 @@ export default function CheckoutScreen() {
               ₱{cash === "" ? "0.00" : parseFloat(cash).toFixed(2)}
             </Text>
           </View>
-
           {isInsufficient && cash !== "" && (
             <Text style={{ color: "#ef4444", fontSize: 13 }}>
               Short by ₱{(totalPrice - cashAmount).toFixed(2)}
             </Text>
           )}
-
-          {/* Numpad — no gap, seamless grid */}
           <Numpad value={cash} onChange={setCash} />
-
-          {/* Fast amount buttons — no gap, seamless row */}
           <View
             style={{
               flexDirection: "row",
@@ -247,7 +250,6 @@ export default function CheckoutScreen() {
 
         <Divider />
 
-        {/* Payment type */}
         <View style={{ gap: 10 }}>
           <Text variant="labelLarge" style={{ color: "#374151" }}>
             Payment Type
@@ -291,12 +293,11 @@ export default function CheckoutScreen() {
           </RadioButton.Group>
           {paymentTypes.length === 0 && (
             <Text style={{ color: "gray", fontSize: 13 }}>
-              No payment types found. Add some in settings.
+              No payment types found. Add some in the Dashboard.
             </Text>
           )}
         </View>
 
-        {/* Change preview */}
         {canCharge && (
           <View
             style={{
@@ -319,7 +320,6 @@ export default function CheckoutScreen() {
           </View>
         )}
 
-        {/* Charge button */}
         <Button
           mode="contained"
           onPress={handleCharge}
@@ -342,8 +342,6 @@ export default function CheckoutScreen() {
     </View>
   );
 }
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function Row({
   label,
@@ -379,8 +377,6 @@ function Numpad({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const keys = ["7", "8", "9", "4", "5", "6", "1", "2", "3", ".", "0", "⌫"];
-
   const handleKey = (key: string) => {
     if (key === "⌫") {
       onChange(value.slice(0, -1));
@@ -390,8 +386,6 @@ function Numpad({
     if (value.includes(".") && value.split(".")[1]?.length >= 2) return;
     onChange(value + key);
   };
-
-  // 3 columns, no gaps — use borders instead
   return (
     <View
       style={{

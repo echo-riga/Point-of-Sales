@@ -1,10 +1,13 @@
 // app/_layout.tsx
-import { Stack, router } from "expo-router";
-import { PaperProvider, MD3LightTheme } from "react-native-paper";
 import { setupDatabase } from "@/services/db";
-import { useEffect } from "react";
-import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as NavigationBar from "expo-navigation-bar";
+import { Stack, router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
+import { Alert, BackHandler, Dimensions, TouchableOpacity } from "react-native";
+import { MD3LightTheme, PaperProvider } from "react-native-paper";
+
 const theme = {
   ...MD3LightTheme,
   colors: {
@@ -14,16 +17,40 @@ const theme = {
   },
 };
 
+function isTablet(): boolean {
+  const { width, height } = Dimensions.get("window");
+  const diagonal = Math.sqrt(width * width + height * height) / 160;
+  return diagonal >= 7;
+}
+
 export default function RootLayout() {
+  const [allowed, setAllowed] = useState(false);
+
   useEffect(() => {
+    if (!isTablet()) {
+      Alert.alert(
+        "Tablet Only",
+        "This app is designed for tablets only and is not supported on phones.",
+        [{ text: "Exit", onPress: () => BackHandler.exitApp() }],
+        { cancelable: false },
+      );
+      return;
+    }
+
+    setAllowed(true);
     setupDatabase();
+    NavigationBar.setVisibilityAsync("hidden");
   }, []);
+
+  if (!allowed) return null;
+
   return (
     <PaperProvider theme={theme}>
+      <StatusBar hidden />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: "#16a34a" },
-          headerTintColor: "white", // back button + title color
+          headerTintColor: "white",
           headerTitleStyle: { fontWeight: "bold" },
         }}
       >
@@ -39,7 +66,7 @@ export default function RootLayout() {
           options={{
             animation: "slide_from_right",
             title: "Checkout",
-            headerBackTitle: "Order", // ← this controls the back button text
+            headerBackTitle: "Order",
           }}
         />
         <Stack.Screen
@@ -47,7 +74,7 @@ export default function RootLayout() {
           options={{
             animation: "slide_from_right",
             title: "Product",
-            headerBackTitle: "Products", // ← back button says "Products"
+            headerBackTitle: "Products",
           }}
         />
         <Stack.Screen
@@ -73,7 +100,7 @@ export default function RootLayout() {
           options={{
             animation: "slide_from_right",
             title: "Transaction Detail",
-            headerBackTitle: "Transactions", // ← back button says "Transactions"
+            headerBackTitle: "Transactions",
           }}
         />
       </Stack>
