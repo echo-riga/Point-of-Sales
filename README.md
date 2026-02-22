@@ -1,50 +1,64 @@
-# Welcome to your Expo app 👋
+# POS — Point of Sale App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A revenue-focused Point of Sale app built for local stores. Designed specifically for tablets in landscape mode, with portrait support as well.
 
-## Get started
+> Built for a printing service client. Feel free to download and try it out.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## 📥 Download
 
-2. Start the app
+**[Download Latest APK](https://github.com/echo-riga/POS/releases/latest)**
 
-   ```bash
-   npx expo start
-   ```
+> iOS version is not publicly distributed. Contact me if you need it.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🎥 Demo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+<!-- Replace with your actual demo video or gif -->
+![Demo](./demo.mp4)
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## ✨ Features
 
-```bash
-npm run reset-project
-```
+**Dashboard**
+- Revenue stats with filtering
+- Pinned dashboard for quick access
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**Products**
+- Full CRUD — add, edit, delete products
+- Category and subcategory management
 
-## Learn more
+**Transactions**
+- Transaction history and logging
+- Multiple payment type support
 
-To learn more about developing your project with Expo, look at the following resources:
+**Settings**
+- Clear data
+- Dynamic configuration
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## 🛠 Built With
 
-Join our community of developers creating universal apps.
+- [React Native](https://reactnative.dev/) + [Expo](https://expo.dev/)
+- [React Native Paper](https://callstack.github.io/react-native-paper/) — UI library
+- [Expo SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/) — local database
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 📱 Compatibility
+
+| Platform | Support |
+|---|---|
+| Android (Tablet) | ✅ Landscape + Portrait |
+| Android (Phone) | ❌ Not supported |
+| iOS | ✉️ Contact me |
+
+---
+
+## 📬 Contact
+
+For iOS version or inquiries, reach out via GitHub issues or contact me directly.
