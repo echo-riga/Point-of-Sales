@@ -238,16 +238,15 @@ const PERIODS: { key: Period; label: string }[] = [
 function periodFilter(period: Period): string {
   switch (period) {
     case "today":
-      return `date(t.date) = date('now')`;
+      return `date(t.date) = date('now', 'localtime')`;
     case "week":
-      return `date(t.date) >= date('now', '-6 days')`;
+      return `date(t.date) >= date('now', '-6 days', 'localtime')`;
     case "month":
-      return `date(t.date) >= date('now', '-29 days')`;
+      return `date(t.date) >= date('now', '-29 days', 'localtime')`;
     default:
       return "1=1";
   }
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PIN_KEY = "app_dashboard_pin";
