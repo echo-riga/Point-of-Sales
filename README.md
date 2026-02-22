@@ -8,7 +8,7 @@ A revenue-focused Point of Sale app built for local stores. Designed specificall
 
 ##  Download
 
-**[Download Latest APK]([https://github.com/echo-riga/POS/releases/latest](https://github.com/echo-riga/POS/releases/tag/v1.0.0))**
+**[Download Latest APK](https://github.com/echo-riga/POS/releases/latest)**
 
 > iOS version is not publicly distributed. Contact me if you need it.
 
