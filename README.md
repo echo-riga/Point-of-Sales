@@ -6,22 +6,22 @@ A revenue-focused Point of Sale app built for local stores. Designed specificall
 
 ---
 
-## 📥 Download
+##  Download
 
-**[Download Latest APK](https://github.com/echo-riga/POS/releases/latest)**
+**[Download Latest APK]([https://github.com/echo-riga/POS/releases/latest](https://github.com/echo-riga/POS/releases/tag/v1.0.0))**
 
 > iOS version is not publicly distributed. Contact me if you need it.
 
 ---
 
-## 🎥 Demo
+##  Demo
 
 <!-- Replace with your actual demo video or gif -->
 ![Demo](./demo.mp4)
 
 ---
 
-## ✨ Features
+##  Features
 
 **Dashboard**
 - Revenue stats with filtering
@@ -41,7 +41,7 @@ A revenue-focused Point of Sale app built for local stores. Designed specificall
 
 ---
 
-## 🛠 Built With
+##  Built With
 
 - [React Native](https://reactnative.dev/) + [Expo](https://expo.dev/)
 - [React Native Paper](https://callstack.github.io/react-native-paper/) — UI library
@@ -49,16 +49,16 @@ A revenue-focused Point of Sale app built for local stores. Designed specificall
 
 ---
 
-## 📱 Compatibility
+##  Compatibility
 
 | Platform | Support |
 |---|---|
-| Android (Tablet) | ✅ Landscape + Portrait |
-| Android (Phone) | ❌ Not supported |
-| iOS | ✉️ Contact me |
+| Android (Tablet) |  Landscape + Portrait |
+| Android (Phone) |  Not supported |
+| iOS |  Contact me |
 
 ---
 
-## 📬 Contact
+##  Contact
 
 For iOS version or inquiries, reach out via GitHub issues or contact me directly.
