@@ -17,7 +17,7 @@ A revenue-focused Point of Sale app built for local stores. Designed specificall
 ##  Demo
 
 <!-- Replace with your actual demo video or gif -->
-![Demo](./demo.mp4)
+https://github.com/user-attachments/assets/2019c76f-022d-437f-b2a4-aa6bfca68b89
 
 ---
 
