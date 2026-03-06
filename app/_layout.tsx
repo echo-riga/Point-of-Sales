@@ -103,6 +103,16 @@ export default function RootLayout() {
             headerBackTitle: "Transactions",
           }}
         />
+        <Stack.Screen
+          name="expenses"
+          options={{
+            title: "Expenses",
+            headerStyle: { backgroundColor: "#dc2626" },
+            headerTintColor: "white",
+            headerTitleStyle: { fontWeight: "bold" },
+            animation: "slide_from_right",
+          }}
+        />
       </Stack>
     </PaperProvider>
   );

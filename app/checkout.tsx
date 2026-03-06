@@ -5,12 +5,13 @@ import { paymentTypeService } from "@/services/paymentTypeService";
 import { transactionService } from "@/services/transactionService";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import { ScrollView, TextInput, TouchableOpacity, View } from "react-native";
 import { Button, Divider, RadioButton, Text } from "react-native-paper";
 
 interface PaymentType {
   id: number;
   name: string;
+  requires_reference: number;
 }
 
 type Stage = "input" | "paid";
@@ -26,8 +27,10 @@ export default function CheckoutScreen() {
     null,
   );
   const [cash, setCash] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
   const [stage, setStage] = useState<Stage>("input");
   const [finalChange, setFinalChange] = useState(0);
+  const [finalRefNumber, setFinalRefNumber] = useState<string | null>(null);
 
   useEffect(() => {
     const types = paymentTypeService.getAll() as PaymentType[];
@@ -38,13 +41,25 @@ export default function CheckoutScreen() {
   const cashAmount = parseFloat(cash) || 0;
   const change = cashAmount - totalPrice;
   const isInsufficient = cashAmount < totalPrice;
-  const canCharge = cashAmount >= totalPrice && selectedPaymentType !== null;
+
+  const selectedType = paymentTypes.find((p) => p.id === selectedPaymentType);
+  const needsRef = selectedType?.requires_reference === 1;
+  const refMissing = needsRef && !referenceNumber.trim();
+
+  const canCharge =
+    cashAmount >= totalPrice && selectedPaymentType !== null && !refMissing;
+
+  const handleSelectPayment = (id: number) => {
+    setSelectedPaymentType(id);
+    setReferenceNumber("");
+  };
 
   const handleCharge = () => {
     if (!canCharge || selectedPaymentType === null) return;
 
     transactionService.create({
       paymentTypeId: selectedPaymentType,
+      referenceNumber: needsRef ? referenceNumber.trim() : null,
       items: items.map((i) => ({
         id: i.id,
         name: i.name,
@@ -53,6 +68,7 @@ export default function CheckoutScreen() {
       })),
     });
 
+    setFinalRefNumber(needsRef ? referenceNumber.trim() : null);
     setFinalChange(cashAmount - totalPrice);
     setStage("paid");
   };
@@ -64,6 +80,7 @@ export default function CheckoutScreen() {
 
   const FAST_AMOUNTS = [20, 50, 100, 200, 500, 1000];
 
+  // ── Paid Screen ─────────────────────────────────────────────────────────────
   if (stage === "paid") {
     return (
       <View style={{ flex: 1, flexDirection: "row" }}>
@@ -112,6 +129,9 @@ export default function CheckoutScreen() {
             <View style={{ width: "100%", gap: 10 }}>
               <Row label="Amount Due" value={`₱${totalPrice.toFixed(2)}`} />
               <Row label="Cash" value={`₱${cashAmount.toFixed(2)}`} />
+              {finalRefNumber ? (
+                <Row label="Reference No." value={finalRefNumber} />
+              ) : null}
               <Divider />
               <Row
                 label="Change"
@@ -149,6 +169,7 @@ export default function CheckoutScreen() {
     );
   }
 
+  // ── Input Screen ─────────────────────────────────────────────────────────────
   return (
     <View style={{ flex: 1, flexDirection: "row" }}>
       <CartSidebar readonly />
@@ -156,6 +177,7 @@ export default function CheckoutScreen() {
         style={{ flex: 2 }}
         contentContainerStyle={{ padding: 20, gap: 20 }}
       >
+        {/* Amount Due */}
         <View
           style={{
             backgroundColor: "#16a34a",
@@ -179,6 +201,7 @@ export default function CheckoutScreen() {
           </Text>
         </View>
 
+        {/* Cash Received */}
         <View style={{ gap: 10 }}>
           <Text variant="labelLarge" style={{ color: "#374151" }}>
             Cash Received
@@ -250,19 +273,20 @@ export default function CheckoutScreen() {
 
         <Divider />
 
+        {/* Payment Type */}
         <View style={{ gap: 10 }}>
           <Text variant="labelLarge" style={{ color: "#374151" }}>
             Payment Type
           </Text>
           <RadioButton.Group
             value={selectedPaymentType?.toString() ?? ""}
-            onValueChange={(val) => setSelectedPaymentType(parseInt(val))}
+            onValueChange={(val) => handleSelectPayment(parseInt(val))}
           >
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {paymentTypes.map((pt) => (
                 <TouchableOpacity
                   key={pt.id}
-                  onPress={() => setSelectedPaymentType(pt.id)}
+                  onPress={() => handleSelectPayment(pt.id)}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -278,15 +302,23 @@ export default function CheckoutScreen() {
                   }}
                 >
                   <RadioButton value={pt.id.toString()} color="#16a34a" />
-                  <Text
-                    style={{
-                      color:
-                        selectedPaymentType === pt.id ? "#15803d" : "#374151",
-                      fontWeight: selectedPaymentType === pt.id ? "700" : "400",
-                    }}
-                  >
-                    {pt.name}
-                  </Text>
+                  <View>
+                    <Text
+                      style={{
+                        color:
+                          selectedPaymentType === pt.id ? "#15803d" : "#374151",
+                        fontWeight:
+                          selectedPaymentType === pt.id ? "700" : "400",
+                      }}
+                    >
+                      {pt.name}
+                    </Text>
+                    {pt.requires_reference === 1 && (
+                      <Text style={{ fontSize: 10, color: "#d97706" }}>
+                        Ref No. required
+                      </Text>
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -298,6 +330,52 @@ export default function CheckoutScreen() {
           )}
         </View>
 
+        {/* Reference Number — shown only when required */}
+        {needsRef && (
+          <View style={{ gap: 8 }}>
+            <Text variant="labelLarge" style={{ color: "#374151" }}>
+              Reference Number
+            </Text>
+            <View
+              style={{
+                borderWidth: 2,
+                borderColor: referenceNumber.trim() ? "#16a34a" : "#f59e0b",
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                backgroundColor: "#fffbeb",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Text style={{ fontSize: 18, color: "#92400e" }}>🔖</Text>
+              <TextInput
+                value={referenceNumber}
+                onChangeText={setReferenceNumber}
+                placeholder="Enter reference number"
+                placeholderTextColor="#d97706"
+                style={{
+                  flex: 1,
+                  fontSize: 16,
+                  color: "#111827",
+                  padding: 0,
+                }}
+                autoCapitalize="characters"
+              />
+              {referenceNumber.trim() ? (
+                <Text style={{ fontSize: 16, color: "#16a34a" }}>✓</Text>
+              ) : null}
+            </View>
+            {refMissing && (
+              <Text style={{ color: "#f59e0b", fontSize: 13 }}>
+                Reference number is required for {selectedType?.name}
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* Change Preview */}
         {canCharge && (
           <View
             style={{
@@ -320,6 +398,7 @@ export default function CheckoutScreen() {
           </View>
         )}
 
+        {/* Charge Button */}
         <Button
           mode="contained"
           onPress={handleCharge}
@@ -327,7 +406,9 @@ export default function CheckoutScreen() {
           style={{
             borderRadius: 12,
             backgroundColor:
-              isInsufficient || cash === "" ? "#9ca3af" : "#16a34a",
+              isInsufficient || cash === "" || refMissing
+                ? "#9ca3af"
+                : "#16a34a",
           }}
           contentStyle={{ paddingVertical: 10 }}
           labelStyle={{ fontSize: 18, fontWeight: "bold" }}
@@ -336,13 +417,16 @@ export default function CheckoutScreen() {
             ? "Enter Cash Amount"
             : isInsufficient
               ? `Insufficient — Short ₱${(totalPrice - cashAmount).toFixed(2)}`
-              : `Charge ₱${totalPrice.toFixed(2)}`}
+              : refMissing
+                ? `Enter ${selectedType?.name} Reference No.`
+                : `Charge ₱${totalPrice.toFixed(2)}`}
         </Button>
       </ScrollView>
     </View>
   );
 }
 
+// ── Row ───────────────────────────────────────────────────────────────────────
 function Row({
   label,
   value,
@@ -370,6 +454,7 @@ function Row({
   );
 }
 
+// ── Numpad ────────────────────────────────────────────────────────────────────
 function Numpad({
   value,
   onChange,
@@ -386,6 +471,7 @@ function Numpad({
     if (value.includes(".") && value.split(".")[1]?.length >= 2) return;
     onChange(value + key);
   };
+
   return (
     <View
       style={{

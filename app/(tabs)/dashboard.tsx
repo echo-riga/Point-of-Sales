@@ -1,7 +1,9 @@
 // app/(tabs)/dashboard.tsx
 import db from "@/services/db";
+import { expenseService } from "@/services/expenseService";
+import { paymentTypeService } from "@/services/paymentTypeService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
@@ -19,6 +21,7 @@ import {
   Text,
   TextInput,
 } from "react-native-paper";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SummaryRow {
@@ -47,6 +50,7 @@ interface DailyRow {
 interface PaymentType {
   id: number;
   name: string;
+  requires_reference: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -61,6 +65,37 @@ function pct(part: number, total: number): number {
 
 function pctLabel(part: number, total: number): string {
   return pct(part, total).toFixed(1) + "%";
+}
+
+// Returns YYYY-MM-DD for a given Date
+function toDateString(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// Returns today as YYYY-MM-DD
+function todayString(): string {
+  return toDateString(new Date());
+}
+
+// Formats YYYY-MM-DD to a readable label like "Mar 7, 2026"
+function formatDateLabel(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  return `${months[m - 1]} ${d}, ${y}`;
 }
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
@@ -226,29 +261,120 @@ function Card({
   );
 }
 
-// ── Period Selector ───────────────────────────────────────────────────────────
-type Period = "today" | "week" | "month" | "all";
-const PERIODS: { key: Period; label: string }[] = [
-  { key: "today", label: "Today" },
-  { key: "week", label: "7 Days" },
-  { key: "month", label: "30 Days" },
-  { key: "all", label: "All Time" },
-];
+// ── Date Range Filter ─────────────────────────────────────────────────────────
+function DateRangeFilter({
+  fromDate,
+  toDate,
+  onFromChange,
+  onToChange,
+}: {
+  fromDate: string;
+  toDate: string;
+  onFromChange: (date: string) => void;
+  onToChange: (date: string) => void;
+}) {
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
 
-function periodFilter(period: Period): string {
-  switch (period) {
-    case "today":
-      return `date(t.date) = date('now', 'localtime')`;
-    case "week":
-      return `date(t.date) >= date('now', '-6 days', 'localtime')`;
-    case "month":
-      return `date(t.date) >= date('now', '-29 days', 'localtime')`;
-    default:
-      return "1=1";
-  }
+  const fromDateObj = new Date(fromDate + "T00:00:00");
+  const toDateObj = new Date(toDate + "T00:00:00");
+
+  return (
+    <Card style={{ padding: 14 }}>
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: "700",
+          color: "#9ca3af",
+          letterSpacing: 1,
+          marginBottom: 10,
+        }}
+      >
+        DATE RANGE
+      </Text>
+      <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+        {/* From */}
+        <TouchableOpacity
+          onPress={() => setShowFromPicker(true)}
+          style={{
+            flex: 1,
+            borderWidth: 1.5,
+            borderColor: "#d1fae5",
+            borderRadius: 10,
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            backgroundColor: "#f0fdf4",
+          }}
+        >
+          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>
+            FROM
+          </Text>
+          <Text style={{ fontWeight: "700", color: "#15803d", fontSize: 14 }}>
+            {formatDateLabel(fromDate)}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={{ color: "#9ca3af", fontWeight: "700", fontSize: 16 }}>
+          →
+        </Text>
+
+        {/* To */}
+        <TouchableOpacity
+          onPress={() => setShowToPicker(true)}
+          style={{
+            flex: 1,
+            borderWidth: 1.5,
+            borderColor: "#d1fae5",
+            borderRadius: 10,
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            backgroundColor: "#f0fdf4",
+          }}
+        >
+          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>
+            TO
+          </Text>
+          <Text style={{ fontWeight: "700", color: "#15803d", fontSize: 14 }}>
+            {formatDateLabel(toDate)}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {showFromPicker && (
+        <DateTimePicker
+          value={fromDateObj}
+          mode="date"
+          display="default"
+          maximumDate={toDateObj}
+          onChange={(_, selected) => {
+            setShowFromPicker(false);
+            if (selected) onFromChange(toDateString(selected));
+          }}
+        />
+      )}
+      {showToPicker && (
+        <DateTimePicker
+          value={toDateObj}
+          mode="date"
+          display="default"
+          minimumDate={fromDateObj}
+          maximumDate={new Date()}
+          onChange={(_, selected) => {
+            setShowToPicker(false);
+            if (selected) onToChange(toDateString(selected));
+          }}
+        />
+      )}
+    </Card>
+  );
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
+// ── SQL helper for date range ─────────────────────────────────────────────────
+function dateRangeFilter(fromDate: string, toDate: string): string {
+  return `date(t.date) BETWEEN '${fromDate}' AND '${toDate}'`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 const PIN_KEY = "app_dashboard_pin";
 
 const SEED_DATA = [
@@ -477,13 +603,18 @@ const SEED_DATA = [
 
 const STANDALONE_ITEMS = ["Scan", "Ring Binding", "Tarpaulin"];
 
+// ─────────────────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
-  const [period, setPeriod] = useState<Period>("today");
+  const today = todayString();
+  const [fromDate, setFromDate] = useState<string>(today);
+  const [toDate, setToDate] = useState<string>(today);
+
   const [summary, setSummary] = useState<SummaryRow>({
     total_revenue: 0,
     total_qty: 0,
     total_transactions: 0,
   });
+  const [totalExpenses, setTotalExpenses] = useState(0);
   const [topItems, setTopItems] = useState<TopItem[]>([]);
   const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdown[]>(
     [],
@@ -491,8 +622,8 @@ export default function DashboardScreen() {
   const [dailyRevenue, setDailyRevenue] = useState<DailyRow[]>([]);
   const [paymentTypes, setPaymentTypes] = useState<PaymentType[]>([]);
 
-  // Payment type modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [newPaymentRequiresRef, setNewPaymentRequiresRef] = useState(false);
   const [newPaymentName, setNewPaymentName] = useState("");
   const [inserting, setInserting] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -564,6 +695,7 @@ export default function DashboardScreen() {
                 DELETE FROM subcategories;
                 DELETE FROM categories;
                 DELETE FROM payment_types;
+                DELETE FROM expenses;
               `);
               await AsyncStorage.removeItem(PIN_KEY);
               Alert.alert("Done", "All data has been cleared.");
@@ -579,7 +711,7 @@ export default function DashboardScreen() {
   };
 
   const loadData = useCallback(() => {
-    const f = periodFilter(period);
+    const f = dateRangeFilter(fromDate, toDate);
 
     // Summary
     const s = db.getFirstSync<SummaryRow>(`
@@ -591,6 +723,10 @@ export default function DashboardScreen() {
       WHERE ${f}
     `);
     if (s) setSummary(s);
+
+    // Expenses total for the same period
+    const expenses = expenseService.getTotalByDateRange(fromDate, toDate);
+    setTotalExpenses(expenses);
 
     // Top items
     const items = db.getAllSync<TopItem>(`
@@ -622,11 +758,11 @@ export default function DashboardScreen() {
     `);
     setPaymentBreakdown(payments);
 
-    // Daily revenue (last 14 days or filtered)
+    // Daily revenue
     const daily = db.getAllSync<DailyRow>(`
       SELECT
         date(t.date) AS day,
-        SUM(t.total_price)        AS revenue
+        SUM(t.total_price) AS revenue
       FROM transactions t
       WHERE ${f}
       GROUP BY day
@@ -636,19 +772,22 @@ export default function DashboardScreen() {
 
     // Payment types list
     const pts = db.getAllSync<PaymentType>(
-      `SELECT id, name FROM payment_types ORDER BY name`,
+      `SELECT id, name, requires_reference FROM payment_types ORDER BY name`,
     );
     setPaymentTypes(pts);
-  }, [period]);
+  }, [fromDate, toDate]);
 
   useFocusEffect(loadData);
 
-  // ── Payment Type Actions ────────────────────────────────────────────────────
   const handleAddPaymentType = () => {
     const trimmed = newPaymentName.trim();
     if (!trimmed) return;
-    db.runSync(`INSERT INTO payment_types (name) VALUES (?)`, [trimmed]);
+    paymentTypeService.create({
+      name: trimmed,
+      requires_reference: newPaymentRequiresRef,
+    });
     setNewPaymentName("");
+    setNewPaymentRequiresRef(false);
     loadData();
   };
 
@@ -675,38 +814,21 @@ export default function DashboardScreen() {
       ? summary.total_revenue / summary.total_transactions
       : 0;
 
+  const profit = summary.total_revenue - totalExpenses;
+  const profitColor = profit >= 0 ? "#16a34a" : "#dc2626";
+
   return (
     <View style={{ flex: 1, backgroundColor: "#f3f4f6" }}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        {/* Period Selector */}
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {PERIODS.map((p) => (
-            <TouchableOpacity
-              key={p.key}
-              onPress={() => setPeriod(p.key)}
-              style={{
-                flex: 1,
-                paddingVertical: 8,
-                borderRadius: 10,
-                alignItems: "center",
-                backgroundColor: period === p.key ? "#16a34a" : "white",
-                elevation: period === p.key ? 3 : 1,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "700",
-                  color: period === p.key ? "white" : "#6b7280",
-                }}
-              >
-                {p.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Date Range Filter */}
+        <DateRangeFilter
+          fromDate={fromDate}
+          toDate={toDate}
+          onFromChange={(d) => setFromDate(d)}
+          onToChange={(d) => setToDate(d)}
+        />
 
-        {/* Stat Cards */}
+        {/* Row 1 — Revenue / Orders / Items Sold */}
         <View style={{ flexDirection: "row", gap: 10 }}>
           <StatCard
             label="Revenue"
@@ -724,6 +846,52 @@ export default function DashboardScreen() {
             value={String(summary.total_qty)}
             accent="#f59e0b"
           />
+        </View>
+
+        {/* Row 2 — Expenses / Profit */}
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <StatCard
+            label="Expenses"
+            value={currency(totalExpenses)}
+            accent="#dc2626"
+          />
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "white",
+              borderRadius: 14,
+              padding: 16,
+              borderLeftWidth: 4,
+              borderLeftColor: profitColor,
+              elevation: 2,
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowRadius: 6,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                color: "#9ca3af",
+                letterSpacing: 1,
+                marginBottom: 4,
+              }}
+            >
+              PROFIT
+            </Text>
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: "bold",
+                color: profitColor,
+              }}
+            >
+              {currency(profit)}
+            </Text>
+            <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+              Revenue − Expenses
+            </Text>
+          </View>
         </View>
 
         {/* Revenue Chart */}
@@ -756,7 +924,6 @@ export default function DashboardScreen() {
                     gap: 10,
                   }}
                 >
-                  {/* Rank */}
                   <View
                     style={{
                       width: 26,
@@ -777,8 +944,6 @@ export default function DashboardScreen() {
                       {i + 1}
                     </Text>
                   </View>
-
-                  {/* Name + bar */}
                   <View style={{ flex: 1 }}>
                     <View
                       style={{
@@ -898,7 +1063,6 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             }
           />
-
           {paymentTypes.length === 0 ? (
             <Text
               style={{
@@ -920,15 +1084,40 @@ export default function DashboardScreen() {
                     paddingVertical: 8,
                   }}
                 >
-                  <Text
-                    style={{
-                      fontWeight: "500",
-                      color: "#111827",
-                      fontSize: 15,
-                    }}
-                  >
-                    {pt.name}
-                  </Text>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text
+                      style={{
+                        fontWeight: "500",
+                        color: "#111827",
+                        fontSize: 15,
+                      }}
+                    >
+                      {pt.name}
+                    </Text>
+                    <View
+                      style={{
+                        alignSelf: "flex-start",
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                        backgroundColor: pt.requires_reference
+                          ? "#fef9c3"
+                          : "#f3f4f6",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "600",
+                          color: pt.requires_reference ? "#854d0e" : "#6b7280",
+                        }}
+                      >
+                        {pt.requires_reference
+                          ? "Ref No. Required"
+                          : "No Ref No."}
+                      </Text>
+                    </View>
+                  </View>
                   <IconButton
                     icon="trash-can-outline"
                     size={20}
@@ -943,10 +1132,59 @@ export default function DashboardScreen() {
           )}
         </Card>
 
+        {/* Expenses */}
+        <Card>
+          <SectionHeader title="Expenses" />
+          <Text style={{ fontSize: 13, color: "#6b7280", marginBottom: 12 }}>
+            Track daily expenses to calculate your net profit on the dashboard.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/expenses")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              backgroundColor: "#fef2f2",
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              borderWidth: 1,
+              borderColor: "#fecaca",
+            }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "#dc2626",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>💸</Text>
+              </View>
+              <View>
+                <Text
+                  style={{ fontWeight: "700", color: "#111827", fontSize: 15 }}
+                >
+                  Manage Expenses
+                </Text>
+                <Text style={{ fontSize: 12, color: "#9ca3af" }}>
+                  Add, edit, or delete expense records
+                </Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 20, color: "#dc2626" }}>›</Text>
+          </TouchableOpacity>
+        </Card>
+
         {/* Data Management */}
         <Card>
           <SectionHeader title="Data Management" />
-
           <Button
             mode="contained"
             buttonColor="#16a34a"
@@ -959,7 +1197,6 @@ export default function DashboardScreen() {
           >
             Insert Arkziam Data
           </Button>
-
           <Button
             mode="outlined"
             textColor="#ef4444"
@@ -972,7 +1209,6 @@ export default function DashboardScreen() {
           >
             Clear All Data
           </Button>
-
           <Text
             style={{
               fontSize: 11,
@@ -996,13 +1232,14 @@ export default function DashboardScreen() {
           onDismiss={() => {
             setShowPaymentModal(false);
             setNewPaymentName("");
+            setNewPaymentRequiresRef(false);
           }}
           style={{ width: 340, alignSelf: "center" }}
         >
           <Dialog.Title style={{ color: "#15803d", fontWeight: "bold" }}>
             Add Payment Type
           </Dialog.Title>
-          <Dialog.Content>
+          <Dialog.Content style={{ gap: 16 }}>
             <TextInput
               label="Payment name"
               value={newPaymentName}
@@ -1013,12 +1250,68 @@ export default function DashboardScreen() {
               placeholder="e.g. Cash, GCash, Card"
               autoFocus
             />
+            <TouchableOpacity
+              onPress={() => setNewPaymentRequiresRef((v) => !v)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 10,
+                paddingHorizontal: 14,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: newPaymentRequiresRef ? "#16a34a" : "#e5e7eb",
+                backgroundColor: newPaymentRequiresRef ? "#f0fdf4" : "#f9fafb",
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{ fontWeight: "600", color: "#111827", fontSize: 14 }}
+                >
+                  Requires Reference No.
+                </Text>
+                <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                  {newPaymentRequiresRef
+                    ? "Cashier must enter a reference number"
+                    : "No reference number needed"}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 44,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: newPaymentRequiresRef
+                    ? "#16a34a"
+                    : "#d1d5db",
+                  justifyContent: "center",
+                  paddingHorizontal: 3,
+                }}
+              >
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    backgroundColor: "white",
+                    alignSelf: newPaymentRequiresRef
+                      ? "flex-end"
+                      : "flex-start",
+                    elevation: 2,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.2,
+                    shadowRadius: 2,
+                  }}
+                />
+              </View>
+            </TouchableOpacity>
           </Dialog.Content>
           <Dialog.Actions>
             <Button
               onPress={() => {
                 setShowPaymentModal(false);
                 setNewPaymentName("");
+                setNewPaymentRequiresRef(false);
               }}
               textColor="#6b7280"
             >

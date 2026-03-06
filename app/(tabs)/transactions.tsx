@@ -9,6 +9,7 @@ interface TransactionRow {
   id: number;
   payment_type_id: number | null;
   payment_type_name: string | null;
+  reference_number: string | null;
   date: string;
   total_qty: number;
   total_price: number;
@@ -274,6 +275,30 @@ export default function TransactionsScreen() {
                                 numberOfLines={1}
                               >
                                 {t.payment_type_name}
+                              </Text>
+                            </View>
+                          )}
+                          {/* Reference number badge */}
+                          {t.reference_number && (
+                            <View
+                              style={{
+                                backgroundColor: "#fffbeb",
+                                borderRadius: 6,
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderWidth: 1,
+                                borderColor: "#fde68a",
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 11,
+                                  color: "#92400e",
+                                  fontWeight: "600",
+                                }}
+                                numberOfLines={1}
+                              >
+                                🔖 {t.reference_number}
                               </Text>
                             </View>
                           )}

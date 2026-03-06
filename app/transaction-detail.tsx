@@ -9,6 +9,7 @@ interface TransactionRow {
   id: number;
   payment_type_id: number | null;
   payment_type_name: string | null;
+  reference_number: string | null;
   date: string;
   total_qty: number;
   total_price: number;
@@ -42,10 +43,12 @@ function Row({
   label,
   value,
   bold,
+  valueColor,
 }: {
   label: string;
   value: string;
   bold?: boolean;
+  valueColor?: string;
 }) {
   return (
     <View
@@ -59,7 +62,7 @@ function Row({
       <Text style={{ color: "#6b7280", fontSize: 14 }}>{label}</Text>
       <Text
         style={{
-          color: "#111827",
+          color: valueColor ?? "#111827",
           fontWeight: bold ? "700" : "500",
           fontSize: 14,
         }}
@@ -153,14 +156,33 @@ export default function TransactionDetailScreen() {
                 #{transaction.id}
               </Text>
             </View>
-            {transaction.payment_type_name && (
-              <Chip
-                style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
-                textStyle={{ color: "white", fontWeight: "700", fontSize: 12 }}
-              >
-                {transaction.payment_type_name}
-              </Chip>
-            )}
+            <View style={{ alignItems: "flex-end", gap: 6 }}>
+              {transaction.payment_type_name && (
+                <Chip
+                  style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+                  textStyle={{
+                    color: "white",
+                    fontWeight: "700",
+                    fontSize: 12,
+                  }}
+                >
+                  {transaction.payment_type_name}
+                </Chip>
+              )}
+              {/* Reference number chip in header */}
+              {transaction.reference_number && (
+                <Chip
+                  style={{ backgroundColor: "rgba(253,230,138,0.25)" }}
+                  textStyle={{
+                    color: "#fef9c3",
+                    fontWeight: "600",
+                    fontSize: 11,
+                  }}
+                >
+                  🔖 {transaction.reference_number}
+                </Chip>
+              )}
+            </View>
           </View>
           <Text style={{ color: "#bbf7d0", fontSize: 13 }}>
             {formatDateTime(transaction.date)}
@@ -196,6 +218,17 @@ export default function TransactionDetailScreen() {
             label="Payment Method"
             value={transaction.payment_type_name ?? "Unknown"}
           />
+          {/* Reference number row — only shown when present */}
+          {transaction.reference_number && (
+            <>
+              <Divider />
+              <Row
+                label="Reference No."
+                value={transaction.reference_number}
+                valueColor="#92400e"
+              />
+            </>
+          )}
           <Divider />
           <Row
             label="Total Revenue"

@@ -31,12 +31,14 @@ export function setupDatabase() {
 
     CREATE TABLE IF NOT EXISTS payment_types (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL
+      name TEXT NOT NULL,
+      requires_reference INTEGER NOT NULL DEFAULT 0  -- 0 = false, 1 = true
     );
 
     CREATE TABLE IF NOT EXISTS transactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       payment_type_id INTEGER,
+      reference_number TEXT,                          -- NULL for GCash or cash, filled for others
       date TEXT NOT NULL,
       total_qty INTEGER NOT NULL,
       total_price REAL NOT NULL,
@@ -52,6 +54,13 @@ export function setupDatabase() {
       total REAL NOT NULL,
       FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL,
       FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,               -- stored as 'YYYY-MM-DD'
+      description TEXT NOT NULL,
+      amount REAL NOT NULL
     );
   `);
 }

@@ -10,6 +10,7 @@ interface CartItem {
 
 interface CreateTransactionInput {
   paymentTypeId: number;
+  referenceNumber?: string | null;
   items: CartItem[];
 }
 
@@ -17,6 +18,7 @@ interface TransactionRow {
   id: number;
   payment_type_id: number | null;
   payment_type_name: string | null;
+  reference_number: string | null;
   date: string;
   total_qty: number;
   total_price: number;
@@ -32,10 +34,14 @@ interface TransactionItemRow {
 }
 
 export const transactionService = {
-  create({ paymentTypeId, items }: CreateTransactionInput): number {
+  create({
+    paymentTypeId,
+    referenceNumber,
+    items,
+  }: CreateTransactionInput): number {
     const totalQty = items.reduce((sum, i) => sum + i.qty, 0);
     const totalPrice = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-    // Store as local time so SQLite date() comparisons work correctly
+
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     const date =
@@ -52,9 +58,9 @@ export const transactionService = {
       pad(now.getSeconds());
 
     const result = db.runSync(
-      `INSERT INTO transactions (payment_type_id, date, total_qty, total_price)
-       VALUES (?, ?, ?, ?)`,
-      [paymentTypeId, date, totalQty, totalPrice],
+      `INSERT INTO transactions (payment_type_id, reference_number, date, total_qty, total_price)
+       VALUES (?, ?, ?, ?, ?)`,
+      [paymentTypeId, referenceNumber ?? null, date, totalQty, totalPrice],
     );
 
     const transactionId = result.lastInsertRowId;
@@ -75,7 +81,8 @@ export const transactionService = {
       SELECT
         t.id,
         t.payment_type_id,
-        pt.name AS payment_type_name,
+        pt.name   AS payment_type_name,
+        t.reference_number,
         t.date,
         t.total_qty,
         t.total_price
@@ -89,17 +96,18 @@ export const transactionService = {
     return (
       db.getFirstSync<TransactionRow>(
         `
-      SELECT
-        t.id,
-        t.payment_type_id,
-        pt.name AS payment_type_name,
-        t.date,
-        t.total_qty,
-        t.total_price
-      FROM transactions t
-      LEFT JOIN payment_types pt ON pt.id = t.payment_type_id
-      WHERE t.id = ?
-    `,
+        SELECT
+          t.id,
+          t.payment_type_id,
+          pt.name   AS payment_type_name,
+          t.reference_number,
+          t.date,
+          t.total_qty,
+          t.total_price
+        FROM transactions t
+        LEFT JOIN payment_types pt ON pt.id = t.payment_type_id
+        WHERE t.id = ?
+      `,
         [id],
       ) ?? null
     );
