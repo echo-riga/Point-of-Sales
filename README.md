@@ -1,5 +1,6 @@
 # POS — Point of Sale App
-A revenue-focused Point of Sale app built for local stores. Designed specifically for tablets in landscape mode, with portrait support as well.
+
+A full-featured Point of Sale app built for local print shops. Manage products, record transactions, track expenses, and monitor profits — all stored locally on device.
 
 > Built for a printing service client. Feel free to download and try it out.
 
