@@ -23,6 +23,64 @@ interface Option {
   name: string;
 }
 
+// ── Color Palette ─────────────────────────────────────────────────────────────
+// Each entry: [background, text, border]
+const CATEGORY_COLORS: [string, string, string][] = [
+  ["#16a34a", "#ffffff", "#15803d"], // green
+  ["#2563eb", "#ffffff", "#1d4ed8"], // blue
+  ["#dc2626", "#ffffff", "#b91c1c"], // red
+  ["#d97706", "#ffffff", "#b45309"], // amber
+  ["#7c3aed", "#ffffff", "#6d28d9"], // violet
+  ["#0891b2", "#ffffff", "#0e7490"], // cyan
+  ["#db2777", "#ffffff", "#be185d"], // pink
+  ["#65a30d", "#ffffff", "#4d7c0f"], // lime
+  ["#ea580c", "#ffffff", "#c2410c"], // orange
+  ["#0f766e", "#ffffff", "#0d9488"], // teal
+  ["#4f46e5", "#ffffff", "#4338ca"], // indigo
+  ["#be123c", "#ffffff", "#9f1239"], // rose
+];
+
+const SUBCATEGORY_COLORS: [string, string, string][] = [
+  ["#dbeafe", "#1e40af", "#bfdbfe"], // blue
+  ["#fce7f3", "#9d174d", "#fbcfe8"], // pink
+  ["#d1fae5", "#065f46", "#a7f3d0"], // green
+  ["#fef3c7", "#92400e", "#fde68a"], // amber
+  ["#ede9fe", "#4c1d95", "#ddd6fe"], // violet
+  ["#cffafe", "#164e63", "#a5f3fc"], // cyan
+  ["#fee2e2", "#7f1d1d", "#fecaca"], // red
+  ["#ecfccb", "#365314", "#d9f99d"], // lime
+  ["#ffedd5", "#7c2d12", "#fed7aa"], // orange
+  ["#ccfbf1", "#134e4a", "#99f6e4"], // teal
+  ["#e0e7ff", "#1e1b4b", "#c7d2fe"], // indigo
+  ["#ffe4e6", "#881337", "#fda4af"], // rose
+];
+
+const ITEM_COLORS: [string, string, string][] = [
+  ["#f0fdf4", "#15803d", "#bbf7d0"], // green
+  ["#eff6ff", "#1d4ed8", "#bfdbfe"], // blue
+  ["#fef9c3", "#854d0e", "#fde68a"], // yellow
+  ["#fdf4ff", "#7e22ce", "#e9d5ff"], // purple
+  ["#fff7ed", "#c2410c", "#fed7aa"], // orange
+  ["#f0f9ff", "#0369a1", "#bae6fd"], // sky
+  ["#fdf2f8", "#9d174d", "#fbcfe8"], // pink
+  ["#f7fee7", "#3f6212", "#d9f99d"], // lime
+  ["#fefce8", "#713f12", "#fef08a"], // yellow-warm
+  ["#f0fdfa", "#0f766e", "#99f6e4"], // teal
+  ["#eef2ff", "#3730a3", "#c7d2fe"], // indigo
+  ["#fff1f2", "#be123c", "#fecdd3"], // rose
+];
+
+/** Pick a color deterministically by index, cycling through the palette. */
+function categoryColor(index: number): [string, string, string] {
+  return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+}
+function subcategoryColor(index: number): [string, string, string] {
+  return SUBCATEGORY_COLORS[index % SUBCATEGORY_COLORS.length];
+}
+function itemColor(index: number): [string, string, string] {
+  return ITEM_COLORS[index % ITEM_COLORS.length];
+}
+
 // ── Numpad ────────────────────────────────────────────────────────────────────
 function Numpad({
   value,
@@ -39,12 +97,8 @@ function Numpad({
       return;
     }
     if (!isPrice) {
-      // qty: integers only, no leading zeros
       if (key === ".") return;
-      if (value === "0") {
-        onChange(key);
-        return;
-      }
+      if (value === "0") { onChange(key); return; }
       onChange(value + key);
       return;
     }
@@ -59,7 +113,6 @@ function Numpad({
 
   return (
     <View style={{ gap: 8 }}>
-      {/* Fast amounts */}
       <View style={{ flexDirection: "row", gap: 6 }}>
         {fastValues.map((amt) => (
           <TouchableOpacity
@@ -75,28 +128,14 @@ function Numpad({
               borderColor: "#16a34a",
             }}
           >
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: value === amt.toString() ? "white" : "#16a34a",
-              }}
-            >
+            <Text style={{ fontSize: 12, fontWeight: "600", color: value === amt.toString() ? "white" : "#16a34a" }}>
               {isPrice ? `₱${amt}` : `×${amt}`}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Numpad grid */}
-      <View
-        style={{
-          borderRadius: 10,
-          overflow: "hidden",
-          borderWidth: 1,
-          borderColor: "#d1fae5",
-        }}
-      >
+      <View style={{ borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: "#d1fae5" }}>
         {[
           ["7", "8", "9"],
           ["4", "5", "6"],
@@ -105,11 +144,7 @@ function Numpad({
         ].map((row, ri) => (
           <View
             key={ri}
-            style={{
-              flexDirection: "row",
-              borderTopWidth: ri === 0 ? 0 : 1,
-              borderTopColor: "#d1fae5",
-            }}
+            style={{ flexDirection: "row", borderTopWidth: ri === 0 ? 0 : 1, borderTopColor: "#d1fae5" }}
           >
             {row.map((key, ki) => (
               <TouchableOpacity
@@ -122,29 +157,22 @@ function Numpad({
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor:
-                    key === "⌫"
-                      ? "#fef2f2"
-                      : key === "." && !isPrice
-                        ? "#e5e7eb"
-                        : ki % 2 === 0
-                          ? "#f0fdf4"
-                          : "#f9fafb",
+                    key === "⌫" ? "#fef2f2"
+                    : key === "." && !isPrice ? "#e5e7eb"
+                    : ki % 2 === 0 ? "#f0fdf4"
+                    : "#f9fafb",
                   borderLeftWidth: ki === 0 ? 0 : 1,
                   borderLeftColor: "#d1fae5",
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: "600",
-                    color:
-                      key === "⌫"
-                        ? "#ef4444"
-                        : key === "." && !isPrice
-                          ? "#9ca3af"
-                          : "#15803d",
-                  }}
-                >
+                <Text style={{
+                  fontSize: 20,
+                  fontWeight: "600",
+                  color:
+                    key === "⌫" ? "#ef4444"
+                    : key === "." && !isPrice ? "#9ca3af"
+                    : "#15803d",
+                }}>
                   {key}
                 </Text>
               </TouchableOpacity>
@@ -155,18 +183,15 @@ function Numpad({
     </View>
   );
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
 export default function OrderScreen() {
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Option[]>([]);
   const [subcategories, setSubcategories] = useState<Option[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(
-    null,
-  );
+  const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null);
 
-  // modal
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [qty, setQty] = useState("1");
   const [price, setPrice] = useState("");
@@ -224,99 +249,131 @@ export default function OrderScreen() {
 
   const noCategoyItems = items.filter((i) => !i.category_id);
   const itemsInSelectedCategoryNoSubcat = selectedCategory
-    ? items.filter(
-        (i) => i.category_id === selectedCategory && !i.subcategory_id,
-      )
+    ? items.filter((i) => i.category_id === selectedCategory && !i.subcategory_id)
     : [];
   const itemsInSelectedSubcategory = selectedSubcategory
     ? items.filter((i) => i.subcategory_id === selectedSubcategory)
     : [];
 
-  const renderItemCard = (item: Item) => (
-    <TouchableOpacity
-      key={item.id}
-      onPress={() => handleItemPress(item)}
-      style={{
-        backgroundColor: "#e8f5e9",
-        borderRadius: 10,
-        padding: 16,
-        margin: 6,
-        width: 120,
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: 80,
-      }}
-    >
-      <Text
-        variant="bodyMedium"
-        style={{ textAlign: "center", fontWeight: "bold" }}
-      >
-        {item.name}
-      </Text>
-    </TouchableOpacity>
-  );
+  // ── Colored card renderers ────────────────────────────────────────────────
 
-  const renderBoxCard = (label: string, onPress: () => void, key: string) => (
-    <TouchableOpacity
-      key={key}
-      onPress={onPress}
-      style={{
-        backgroundColor: "#16a34a",
-        borderRadius: 10,
-        padding: 16,
-        margin: 6,
-        width: 120,
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: 80,
-      }}
-    >
-      <Text
-        variant="bodyMedium"
-        style={{ textAlign: "center", color: "white", fontWeight: "bold" }}
+  const renderCategoryCard = (cat: Option, index: number) => {
+    const [bg, text, border] = categoryColor(index);
+    return (
+      <TouchableOpacity
+        key={`cat-${cat.id}`}
+        onPress={() => handleCategoryPress(cat.id)}
+        style={{
+          backgroundColor: bg,
+          borderRadius: 12,
+          padding: 16,
+          margin: 6,
+          width: 120,
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 80,
+          borderWidth: 2,
+          borderColor: border,
+          elevation: 3,
+          shadowColor: bg,
+          shadowOpacity: 0.4,
+          shadowRadius: 6,
+        }}
       >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
+        <Text style={{ textAlign: "center", fontWeight: "bold", color: text, fontSize: 13 }}>
+          {cat.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderSubcategoryCard = (sub: Option, index: number) => {
+    const [bg, text, border] = subcategoryColor(index);
+    const isSelected = selectedSubcategory === sub.id;
+    return (
+      <TouchableOpacity
+        key={`sub-${sub.id}`}
+        onPress={() => handleSubcategoryPress(sub.id)}
+        style={{
+          backgroundColor: isSelected ? "#16a34a" : bg,
+          borderRadius: 12,
+          padding: 16,
+          margin: 6,
+          width: 120,
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 80,
+          borderWidth: 2,
+          borderColor: isSelected ? "#15803d" : border,
+          elevation: isSelected ? 4 : 2,
+          shadowColor: "#000",
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        }}
+      >
+        <Text style={{ textAlign: "center", fontWeight: "bold", color: isSelected ? "#ffffff" : text, fontSize: 13 }}>
+          {sub.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderItemCard = (item: Item, index: number) => {
+    const [bg, text, border] = itemColor(index);
+    return (
+      <TouchableOpacity
+        key={item.id}
+        onPress={() => handleItemPress(item)}
+        style={{
+          backgroundColor: bg,
+          borderRadius: 12,
+          padding: 16,
+          margin: 6,
+          width: 120,
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 80,
+          borderWidth: 1.5,
+          borderColor: border,
+          elevation: 2,
+          shadowColor: "#000",
+          shadowOpacity: 0.06,
+          shadowRadius: 4,
+        }}
+      >
+        <Text style={{ textAlign: "center", fontWeight: "700", color: text, fontSize: 13 }}>
+          {item.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderGrid = () => {
     const cards: React.ReactNode[] = [];
 
     if (selectedSubcategory) {
-      itemsInSelectedSubcategory.forEach((item) =>
-        cards.push(renderItemCard(item)),
+      itemsInSelectedSubcategory.forEach((item, i) =>
+        cards.push(renderItemCard(item, i)),
       );
     } else if (selectedCategory) {
-      subcategories.forEach((sub) =>
-        cards.push(
-          renderBoxCard(
-            sub.name,
-            () => handleSubcategoryPress(sub.id),
-            `sub-${sub.id}`,
-          ),
-        ),
+      subcategories.forEach((sub, i) =>
+        cards.push(renderSubcategoryCard(sub, i)),
       );
-      itemsInSelectedCategoryNoSubcat.forEach((item) =>
-        cards.push(renderItemCard(item)),
+      itemsInSelectedCategoryNoSubcat.forEach((item, i) =>
+        cards.push(renderItemCard(item, subcategories.length + i)),
       );
     } else {
-      categories.forEach((cat) =>
-        cards.push(
-          renderBoxCard(
-            cat.name,
-            () => handleCategoryPress(cat.id),
-            `cat-${cat.id}`,
-          ),
-        ),
+      categories.forEach((cat, i) =>
+        cards.push(renderCategoryCard(cat, i)),
       );
-      noCategoyItems.forEach((item) => cards.push(renderItemCard(item)));
+      noCategoyItems.forEach((item, i) =>
+        cards.push(renderItemCard(item, categories.length + i)),
+      );
     }
 
     return cards;
   };
 
-  // Shared display box style
   const inputBox = (active: boolean) => ({
     backgroundColor: active ? "#f0fdf4" : "#f9fafb",
     borderWidth: 2,
@@ -332,14 +389,7 @@ export default function OrderScreen() {
       {/* Left - Products */}
       <View style={{ flex: 2, padding: 16 }}>
         {/* Breadcrumb */}
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 8,
-            marginBottom: 12,
-            alignItems: "center",
-          }}
-        >
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, alignItems: "center" }}>
           <TouchableOpacity
             onPress={() => {
               setSelectedCategory(null);
@@ -347,9 +397,7 @@ export default function OrderScreen() {
               setSubcategories([]);
             }}
           >
-            <Text variant="bodyMedium" style={{ color: "#16a34a" }}>
-              All
-            </Text>
+            <Text variant="bodyMedium" style={{ color: "#16a34a" }}>All</Text>
           </TouchableOpacity>
           {selectedCategory && (
             <>
@@ -374,11 +422,7 @@ export default function OrderScreen() {
         <Divider />
 
         <ScrollView
-          contentContainerStyle={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            paddingTop: 12,
-          }}
+          contentContainerStyle={{ flexDirection: "row", flexWrap: "wrap", paddingTop: 12 }}
         >
           {renderGrid()}
         </ScrollView>
@@ -405,48 +449,20 @@ export default function OrderScreen() {
           </Dialog.Title>
 
           <Dialog.Content style={{ gap: 12 }}>
-            {/* Tappable display inputs */}
             <View style={{ flexDirection: "row", gap: 10 }}>
-              {/* Qty box */}
-              <TouchableOpacity
-                style={inputBox(activeInput === "qty")}
-                onPress={() => setActiveInput("qty")}
-              >
-                <Text
-                  style={{ fontSize: 11, color: "#6b7280", letterSpacing: 1 }}
-                >
-                  QUANTITY
-                </Text>
-                <Text
-                  style={{ fontSize: 26, fontWeight: "bold", color: "#111827" }}
-                >
-                  {qty || "0"}
-                </Text>
+              <TouchableOpacity style={inputBox(activeInput === "qty")} onPress={() => setActiveInput("qty")}>
+                <Text style={{ fontSize: 11, color: "#6b7280", letterSpacing: 1 }}>QUANTITY</Text>
+                <Text style={{ fontSize: 26, fontWeight: "bold", color: "#111827" }}>{qty || "0"}</Text>
               </TouchableOpacity>
 
-              {/* Price box */}
-              <TouchableOpacity
-                style={inputBox(activeInput === "price")}
-                onPress={() => setActiveInput("price")}
-              >
-                <Text
-                  style={{ fontSize: 11, color: "#6b7280", letterSpacing: 1 }}
-                >
-                  UNIT PRICE
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 26,
-                    fontWeight: "bold",
-                    color: price ? "#111827" : "#9ca3af",
-                  }}
-                >
+              <TouchableOpacity style={inputBox(activeInput === "price")} onPress={() => setActiveInput("price")}>
+                <Text style={{ fontSize: 11, color: "#6b7280", letterSpacing: 1 }}>UNIT PRICE</Text>
+                <Text style={{ fontSize: 26, fontWeight: "bold", color: price ? "#111827" : "#9ca3af" }}>
                   ₱{price === "" ? "0.00" : parseFloat(price).toFixed(2)}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Single numpad — switches based on activeInput */}
             <Numpad
               value={activeInput === "qty" ? qty : price}
               onChange={activeInput === "qty" ? setQty : setPrice}
@@ -455,15 +471,8 @@ export default function OrderScreen() {
           </Dialog.Content>
 
           <Dialog.Actions>
-            <Button onPress={() => setSelectedItem(null)} textColor="#6b7280">
-              Cancel
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleAddToCart}
-              disabled={!price}
-              buttonColor="#16a34a"
-            >
+            <Button onPress={() => setSelectedItem(null)} textColor="#6b7280">Cancel</Button>
+            <Button mode="contained" onPress={handleAddToCart} disabled={!price} buttonColor="#16a34a">
               Add to Cart
             </Button>
           </Dialog.Actions>

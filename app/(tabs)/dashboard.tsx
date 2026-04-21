@@ -22,6 +22,9 @@ import {
   TextInput,
 } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { File, Paths } from "expo-file-system/next";
+import * as Sharing from "expo-sharing";
+import * as DocumentPicker from "expo-document-picker";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface SummaryRow {
@@ -67,33 +70,20 @@ function pctLabel(part: number, total: number): string {
   return pct(part, total).toFixed(1) + "%";
 }
 
-// Returns YYYY-MM-DD for a given Date
 function toDateString(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-// Returns today as YYYY-MM-DD
 function todayString(): string {
   return toDateString(new Date());
 }
 
-// Formats YYYY-MM-DD to a readable label like "Mar 7, 2026"
 function formatDateLabel(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+    "Jan","Feb","Mar","Apr","May","Jun",
+    "Jul","Aug","Sep","Oct","Nov","Dec",
   ];
   return `${months[m - 1]} ${d}, ${y}`;
 }
@@ -125,23 +115,14 @@ function StatCard({
         shadowRadius: 6,
       }}
     >
-      <Text
-        style={{
-          fontSize: 11,
-          color: "#9ca3af",
-          letterSpacing: 1,
-          marginBottom: 4,
-        }}
-      >
+      <Text style={{ fontSize: 11, color: "#9ca3af", letterSpacing: 1, marginBottom: 4 }}>
         {label.toUpperCase()}
       </Text>
       <Text style={{ fontSize: 22, fontWeight: "bold", color: "#111827" }}>
         {value}
       </Text>
       {sub ? (
-        <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-          {sub}
-        </Text>
+        <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{sub}</Text>
       ) : null}
     </View>
   );
@@ -152,10 +133,7 @@ function BarChart({ data }: { data: DailyRow[] }) {
   const max = Math.max(...data.map((d) => d.revenue), 1);
   const BAR_WIDTH = Math.max(
     20,
-    Math.min(
-      40,
-      (Dimensions.get("window").width * 0.55) / (data.length || 1) - 6,
-    ),
+    Math.min(40, (Dimensions.get("window").width * 0.55) / (data.length || 1) - 6),
   );
 
   if (!data.length)
@@ -167,22 +145,12 @@ function BarChart({ data }: { data: DailyRow[] }) {
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "flex-end",
-          gap: 6,
-          paddingVertical: 8,
-          paddingHorizontal: 4,
-        }}
-      >
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, paddingVertical: 8, paddingHorizontal: 4 }}>
         {data.map((d, i) => {
           const h = Math.max(4, (d.revenue / max) * 120);
           return (
             <View key={i} style={{ alignItems: "center", gap: 4 }}>
-              <Text style={{ fontSize: 9, color: "#6b7280" }}>
-                {currency(d.revenue)}
-              </Text>
+              <Text style={{ fontSize: 9, color: "#6b7280" }}>{currency(d.revenue)}</Text>
               <View
                 style={{
                   width: BAR_WIDTH,
@@ -192,9 +160,7 @@ function BarChart({ data }: { data: DailyRow[] }) {
                   opacity: 0.85 + 0.15 * (i / data.length),
                 }}
               />
-              <Text style={{ fontSize: 10, color: "#6b7280" }}>
-                {d.day.slice(5)}
-              </Text>
+              <Text style={{ fontSize: 10, color: "#6b7280" }}>{d.day.slice(5)}</Text>
             </View>
           );
         })}
@@ -204,30 +170,10 @@ function BarChart({ data }: { data: DailyRow[] }) {
 }
 
 // ── Section Header ────────────────────────────────────────────────────────────
-function SectionHeader({
-  title,
-  action,
-}: {
-  title: string;
-  action?: React.ReactNode;
-}) {
+function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 10,
-      }}
-    >
-      <Text
-        style={{
-          fontSize: 13,
-          fontWeight: "700",
-          color: "#374151",
-          letterSpacing: 0.5,
-        }}
-      >
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+      <Text style={{ fontSize: 13, fontWeight: "700", color: "#374151", letterSpacing: 0.5 }}>
         {title.toUpperCase()}
       </Text>
       {action}
@@ -236,13 +182,7 @@ function SectionHeader({
 }
 
 // ── Card Wrapper ──────────────────────────────────────────────────────────────
-function Card({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: object;
-}) {
+function Card({ children, style }: { children: React.ReactNode; style?: object }) {
   return (
     <View
       style={{
@@ -281,19 +221,10 @@ function DateRangeFilter({
 
   return (
     <Card style={{ padding: 14 }}>
-      <Text
-        style={{
-          fontSize: 11,
-          fontWeight: "700",
-          color: "#9ca3af",
-          letterSpacing: 1,
-          marginBottom: 10,
-        }}
-      >
+      <Text style={{ fontSize: 11, fontWeight: "700", color: "#9ca3af", letterSpacing: 1, marginBottom: 10 }}>
         DATE RANGE
       </Text>
       <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-        {/* From */}
         <TouchableOpacity
           onPress={() => setShowFromPicker(true)}
           style={{
@@ -306,19 +237,12 @@ function DateRangeFilter({
             backgroundColor: "#f0fdf4",
           }}
         >
-          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>
-            FROM
-          </Text>
-          <Text style={{ fontWeight: "700", color: "#15803d", fontSize: 14 }}>
-            {formatDateLabel(fromDate)}
-          </Text>
+          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>FROM</Text>
+          <Text style={{ fontWeight: "700", color: "#15803d", fontSize: 14 }}>{formatDateLabel(fromDate)}</Text>
         </TouchableOpacity>
 
-        <Text style={{ color: "#9ca3af", fontWeight: "700", fontSize: 16 }}>
-          →
-        </Text>
+        <Text style={{ color: "#9ca3af", fontWeight: "700", fontSize: 16 }}>→</Text>
 
-        {/* To */}
         <TouchableOpacity
           onPress={() => setShowToPicker(true)}
           style={{
@@ -331,12 +255,8 @@ function DateRangeFilter({
             backgroundColor: "#f0fdf4",
           }}
         >
-          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>
-            TO
-          </Text>
-          <Text style={{ fontWeight: "700", color: "#15803d", fontSize: 14 }}>
-            {formatDateLabel(toDate)}
-          </Text>
+          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>TO</Text>
+          <Text style={{ fontWeight: "700", color: "#15803d", fontSize: 14 }}>{formatDateLabel(toDate)}</Text>
         </TouchableOpacity>
       </View>
 
@@ -416,19 +336,7 @@ const SEED_DATA = [
     subcategories: [
       {
         name: "Hot & Cold",
-        items: [
-          "ID",
-          "ATM",
-          "2R/Wallet",
-          "3R/B7",
-          "4R/A6",
-          "5R/B6",
-          "6R",
-          "8R/Short",
-          "A5",
-          "A4",
-          "Long",
-        ],
+        items: ["ID","ATM","2R/Wallet","3R/B7","4R/A6","5R/B6","6R","8R/Short","A5","A4","Long"],
       },
     ],
   },
@@ -437,24 +345,11 @@ const SEED_DATA = [
     subcategories: [
       {
         name: "Matte/Glossy Photopaper",
-        items: [
-          "A5 Custom",
-          "A4 Custom",
-          "A4 Custom Subject Sticker Name",
-          "A5 Subject Sticker Plain",
-          "A4 Subject Sticker Plain",
-        ],
+        items: ["A5 Custom","A4 Custom","A4 Custom Subject Sticker Name","A5 Subject Sticker Plain","A4 Subject Sticker Plain"],
       },
       {
         name: "Vinyl Stickers",
-        items: [
-          "1in x 3in",
-          "1in x 4in",
-          "1in x 5in",
-          "2in x 3in",
-          "2in x 4in",
-          "2in x 5in",
-        ],
+        items: ["1in x 3in","1in x 4in","1in x 5in","2in x 3in","2in x 4in","2in x 5in"],
       },
     ],
   },
@@ -463,35 +358,11 @@ const SEED_DATA = [
     subcategories: [
       {
         name: "Glossy Photopaper",
-        items: [
-          "A4",
-          "5R",
-          "4R",
-          "3R",
-          "2R",
-          "Miniwallet",
-          "Wallet",
-          "Cute Size",
-          "Photo Strip 2.2 x 7in",
-          "Photo Strip 2 x 6in",
-          "Photo Grid 4 x 6in",
-        ],
+        items: ["A4","5R","4R","3R","2R","Miniwallet","Wallet","Cute Size","Photo Strip 2.2 x 7in","Photo Strip 2 x 6in","Photo Grid 4 x 6in"],
       },
       {
         name: "Printed",
-        items: [
-          "A4",
-          "5R",
-          "4R",
-          "3R",
-          "2R",
-          "Miniwallet",
-          "Wallet",
-          "Cute Size",
-          "Photo Strip 2.2 x 7in",
-          "Photo Strip 2 x 6in",
-          "Photo Grid 4 x 6in",
-        ],
+        items: ["A4","5R","4R","3R","2R","Miniwallet","Wallet","Cute Size","Photo Strip 2.2 x 7in","Photo Strip 2 x 6in","Photo Grid 4 x 6in"],
       },
     ],
   },
@@ -500,45 +371,15 @@ const SEED_DATA = [
     subcategories: [
       {
         name: "For Photo Capture",
-        items: [
-          "2 x 2in",
-          "1.5 x 1.5in",
-          "1 x 1in",
-          "Passport",
-          "ASA ID",
-          "Combo A",
-          "Combo B",
-          "Combo C",
-          "Combo D",
-        ],
+        items: ["2 x 2in","1.5 x 1.5in","1 x 1in","Passport","ASA ID","Combo A","Combo B","Combo C","Combo D"],
       },
       {
         name: "Ready to Print",
-        items: [
-          "1 x 1in",
-          "1.5 x 1.5in",
-          "Passport",
-          "2 x 2in",
-          "ASA ID",
-          "Combo A",
-          "Combo B",
-          "Combo C",
-          "Combo D",
-        ],
+        items: ["1 x 1in","1.5 x 1.5in","Passport","2 x 2in","ASA ID","Combo A","Combo B","Combo C","Combo D"],
       },
       {
         name: "Provided by Client",
-        items: [
-          "2 x 2in",
-          "1.5 x 1.5in",
-          "1 x 1in",
-          "Passport",
-          "ASA ID",
-          "Combo A",
-          "Combo B",
-          "Combo C",
-          "Combo D",
-        ],
+        items: ["2 x 2in","1.5 x 1.5in","1 x 1in","Passport","ASA ID","Combo A","Combo B","Combo C","Combo D"],
       },
     ],
   },
@@ -560,48 +401,116 @@ const SEED_DATA = [
         name: "Ref Magnet",
         items: ["ATM", "Face Cut Out", "Number Cut Out", "A6", "A5", "A4"],
       },
-      {
-        name: "Bookmarks",
-        items: ["1 x 2.5in", "1.5 x 2.5in", "Laminated 2.25 x 6in"],
-      },
-      {
-        name: "Notepad",
-        items: ["3 x 3in", "3 x 4in", "4 x 4in", "4 x 5in", "A5"],
-      },
-      {
-        name: "Nametags",
-        items: ["Plain", "Customized", "7 x 2.5in", "ATM", "2 x 4in", "ID"],
-      },
+      { name: "Bookmarks", items: ["1 x 2.5in", "1.5 x 2.5in", "Laminated 2.25 x 6in"] },
+      { name: "Notepad", items: ["3 x 3in", "3 x 4in", "4 x 4in", "4 x 5in", "A5"] },
+      { name: "Nametags", items: ["Plain", "Customized", "7 x 2.5in", "ATM", "2 x 4in", "ID"] },
       {
         name: "Calling Card",
-        items: [
-          "Ordinary One Side",
-          "Ordinary Back to Back",
-          "Leather One Side",
-          "Leather Back to Back",
-        ],
+        items: ["Ordinary One Side","Ordinary Back to Back","Leather One Side","Leather Back to Back"],
       },
       {
         name: "Loyalty Card",
-        items: [
-          "ATM One Side",
-          "ATM Back to Back",
-          "Square One Side",
-          "Square Back to Back",
-        ],
+        items: ["ATM One Side","ATM Back to Back","Square One Side","Square Back to Back"],
       },
       { name: "Tracing Pad", items: ["70GSM", "100GSM"] },
       { name: "Laminated Tracing Pad", items: ["A5"] },
-      {
-        name: "Workbook",
-        items: ["RingBind A5", "RingBind Letter", "Stapler A5"],
-      },
+      { name: "Workbook", items: ["RingBind A5", "RingBind Letter", "Stapler A5"] },
       { name: "Laminated Workbook", items: ["A5", "Letter"] },
     ],
   },
 ];
 
 const STANDALONE_ITEMS = ["Scan", "Ring Binding", "Tarpaulin"];
+
+// ── Export / Import helpers ───────────────────────────────────────────────────
+
+/** Dump every table into a plain-JS object that can be JSON-stringified. */
+function exportAllTables() {
+  return {
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    categories:       db.getAllSync("SELECT * FROM categories"),
+    subcategories:    db.getAllSync("SELECT * FROM subcategories"),
+    items:            db.getAllSync("SELECT * FROM items"),
+    payment_types:    db.getAllSync("SELECT * FROM payment_types"),
+    transactions:     db.getAllSync("SELECT * FROM transactions"),
+    transaction_items:db.getAllSync("SELECT * FROM transaction_items"),
+    expenses:         db.getAllSync("SELECT * FROM expenses"),
+  };
+}
+
+/**
+ * Restore all tables from a previously exported JSON backup.
+ * Strategy: clear each table, re-insert with original IDs so all
+ * foreign-key references stay intact.
+ */
+function importAllTables(data: ReturnType<typeof exportAllTables>) {
+  db.execSync("PRAGMA foreign_keys = OFF;");
+
+  try {
+    db.execSync(`
+      DELETE FROM transaction_items;
+      DELETE FROM transactions;
+      DELETE FROM items;
+      DELETE FROM subcategories;
+      DELETE FROM categories;
+      DELETE FROM payment_types;
+      DELETE FROM expenses;
+    `);
+
+    for (const r of (data.categories as any[])) {
+      db.runSync("INSERT INTO categories (id, name) VALUES (?, ?)", [r.id, r.name]);
+    }
+
+    for (const r of (data.subcategories as any[])) {
+      db.runSync(
+        "INSERT INTO subcategories (id, category_id, name) VALUES (?, ?, ?)",
+        [r.id, r.category_id, r.name],
+      );
+    }
+
+    for (const r of (data.items as any[])) {
+      db.runSync(
+        "INSERT INTO items (id, category_id, subcategory_id, name) VALUES (?, ?, ?, ?)",
+        [r.id, r.category_id, r.subcategory_id, r.name],
+      );
+    }
+
+    for (const r of (data.payment_types as any[])) {
+      db.runSync(
+        "INSERT INTO payment_types (id, name, requires_reference) VALUES (?, ?, ?)",
+        [r.id, r.name, r.requires_reference],
+      );
+    }
+
+    for (const r of (data.transactions as any[])) {
+      db.runSync(
+        `INSERT INTO transactions
+           (id, payment_type_id, reference_number, date, total_qty, total_price)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [r.id, r.payment_type_id, r.reference_number, r.date, r.total_qty, r.total_price],
+      );
+    }
+
+    for (const r of (data.transaction_items as any[])) {
+      db.runSync(
+        `INSERT INTO transaction_items
+           (id, transaction_id, item_id, price, qty, total)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [r.id, r.transaction_id, r.item_id, r.price, r.qty, r.total],
+      );
+    }
+
+    for (const r of (data.expenses as any[])) {
+      db.runSync(
+        "INSERT INTO expenses (id, date, description, amount) VALUES (?, ?, ?, ?)",
+        [r.id, r.date, r.description, r.amount],
+      );
+    }
+  } finally {
+    db.execSync("PRAGMA foreign_keys = ON;");
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
@@ -616,9 +525,7 @@ export default function DashboardScreen() {
   });
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [topItems, setTopItems] = useState<TopItem[]>([]);
-  const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdown[]>(
-    [],
-  );
+  const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdown[]>([]);
   const [dailyRevenue, setDailyRevenue] = useState<DailyRow[]>([]);
   const [paymentTypes, setPaymentTypes] = useState<PaymentType[]>([]);
 
@@ -627,7 +534,93 @@ export default function DashboardScreen() {
   const [newPaymentName, setNewPaymentName] = useState("");
   const [inserting, setInserting] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+// ── Export ────────────────────────────────────────────────────────────────
+const handleExportData = async () => {
+  setExporting(true);
+  try {
+    const payload = exportAllTables();
+    const json = JSON.stringify(payload, null, 2);
 
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, 19);
+
+    // New API: File(directory, filename)
+    const file = new File(Paths.cache, `arkziam-backup-${timestamp}.json`);
+    file.write(json);
+
+    const canShare = await Sharing.isAvailableAsync();
+    if (canShare) {
+      await Sharing.shareAsync(file.uri, {
+        mimeType: "application/json",
+        dialogTitle: "Save or share your backup",
+        UTI: "public.json",
+      });
+    } else {
+      Alert.alert("Exported", `Backup saved to:\n${file.uri}`);
+    }
+  } catch (e) {
+    Alert.alert("Export Failed", String(e));
+  } finally {
+    setExporting(false);
+  }
+};
+const handleImportData = async () => {
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "application/json",
+      copyToCacheDirectory: true,
+    });
+
+    if (result.canceled) return;
+
+    const pickedUri = result.assets[0].uri;
+
+    Alert.alert(
+      "Restore Backup",
+      "This will REPLACE all current data with the backup file. This cannot be undone. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Restore",
+          style: "destructive",
+          onPress: async () => {
+            setImporting(true);
+            try {
+              // Use fetch() — works with any URI from DocumentPicker
+              const response = await fetch(pickedUri);
+              const raw = await response.text();
+              const parsed = JSON.parse(raw);
+
+              const required = [
+                "categories", "subcategories", "items",
+                "payment_types", "transactions", "transaction_items", "expenses",
+              ];
+              const missing = required.filter((k) => !(k in parsed));
+              if (missing.length) {
+                Alert.alert("Invalid Backup", `Missing tables: ${missing.join(", ")}`);
+                return;
+              }
+
+              importAllTables(parsed);
+              loadData();
+              Alert.alert("Success", "Data restored from backup!");
+            } catch (e) {
+              Alert.alert("Import Failed", String(e));
+            } finally {
+              setImporting(false);
+            }
+          },
+        },
+      ],
+    );
+  } catch (e) {
+    Alert.alert("Import Failed", String(e));
+  }
+};
   const handleInsertArkziamData = () => {
     Alert.alert(
       "Insert Arkziam Data",
@@ -713,7 +706,6 @@ export default function DashboardScreen() {
   const loadData = useCallback(() => {
     const f = dateRangeFilter(fromDate, toDate);
 
-    // Summary
     const s = db.getFirstSync<SummaryRow>(`
       SELECT
         COALESCE(SUM(t.total_price), 0) AS total_revenue,
@@ -724,11 +716,9 @@ export default function DashboardScreen() {
     `);
     if (s) setSummary(s);
 
-    // Expenses total for the same period
     const expenses = expenseService.getTotalByDateRange(fromDate, toDate);
     setTotalExpenses(expenses);
 
-    // Top items
     const items = db.getAllSync<TopItem>(`
       SELECT
         i.name,
@@ -744,7 +734,6 @@ export default function DashboardScreen() {
     `);
     setTopItems(items);
 
-    // Payment breakdown
     const payments = db.getAllSync<PaymentBreakdown>(`
       SELECT
         COALESCE(pt.name, 'Unknown') AS payment_name,
@@ -758,7 +747,6 @@ export default function DashboardScreen() {
     `);
     setPaymentBreakdown(payments);
 
-    // Daily revenue
     const daily = db.getAllSync<DailyRow>(`
       SELECT
         date(t.date) AS day,
@@ -770,7 +758,6 @@ export default function DashboardScreen() {
     `);
     setDailyRevenue(daily);
 
-    // Payment types list
     const pts = db.getAllSync<PaymentType>(
       `SELECT id, name, requires_reference FROM payment_types ORDER BY name`,
     );
@@ -817,6 +804,8 @@ export default function DashboardScreen() {
   const profit = summary.total_revenue - totalExpenses;
   const profitColor = profit >= 0 ? "#16a34a" : "#dc2626";
 
+  const isBusy = inserting || clearing || exporting || importing;
+
   return (
     <View style={{ flex: 1, backgroundColor: "#f3f4f6" }}>
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
@@ -830,31 +819,19 @@ export default function DashboardScreen() {
 
         {/* Row 1 — Revenue / Orders / Items Sold */}
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <StatCard
-            label="Revenue"
-            value={currency(summary.total_revenue)}
-            accent="#16a34a"
-          />
+          <StatCard label="Revenue" value={currency(summary.total_revenue)} accent="#16a34a" />
           <StatCard
             label="Orders"
             value={String(summary.total_transactions)}
             sub={`Avg ${currency(avgOrder)}`}
             accent="#0ea5e9"
           />
-          <StatCard
-            label="Items Sold"
-            value={String(summary.total_qty)}
-            accent="#f59e0b"
-          />
+          <StatCard label="Items Sold" value={String(summary.total_qty)} accent="#f59e0b" />
         </View>
 
         {/* Row 2 — Expenses / Profit */}
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <StatCard
-            label="Expenses"
-            value={currency(totalExpenses)}
-            accent="#dc2626"
-          />
+          <StatCard label="Expenses" value={currency(totalExpenses)} accent="#dc2626" />
           <View
             style={{
               flex: 1,
@@ -869,23 +846,10 @@ export default function DashboardScreen() {
               shadowRadius: 6,
             }}
           >
-            <Text
-              style={{
-                fontSize: 11,
-                color: "#9ca3af",
-                letterSpacing: 1,
-                marginBottom: 4,
-              }}
-            >
+            <Text style={{ fontSize: 11, color: "#9ca3af", letterSpacing: 1, marginBottom: 4 }}>
               PROFIT
             </Text>
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "bold",
-                color: profitColor,
-              }}
-            >
+            <Text style={{ fontSize: 22, fontWeight: "bold", color: profitColor }}>
               {currency(profit)}
             </Text>
             <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
@@ -904,26 +868,13 @@ export default function DashboardScreen() {
         <Card>
           <SectionHeader title="Top Items" />
           {topItems.length === 0 ? (
-            <Text
-              style={{
-                color: "#9ca3af",
-                textAlign: "center",
-                paddingVertical: 12,
-              }}
-            >
+            <Text style={{ color: "#9ca3af", textAlign: "center", paddingVertical: 12 }}>
               No sales in this period
             </Text>
           ) : (
             topItems.map((item, i) => (
               <View key={i}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 10,
-                    gap: 10,
-                  }}
-                >
+                <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, gap: 10 }}>
                   <View
                     style={{
                       width: 26,
@@ -934,38 +885,18 @@ export default function DashboardScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        fontWeight: "bold",
-                        color: i < 3 ? "white" : "#6b7280",
-                      }}
-                    >
+                    <Text style={{ fontSize: 11, fontWeight: "bold", color: i < 3 ? "white" : "#6b7280" }}>
                       {i + 1}
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <Text style={{ fontWeight: "600", color: "#111827" }}>
-                        {item.name}
-                      </Text>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={{ fontWeight: "600", color: "#111827" }}>{item.name}</Text>
                       <Text style={{ fontWeight: "700", color: "#16a34a" }}>
                         {currency(item.total_revenue)}
                       </Text>
                     </View>
-                    <View
-                      style={{
-                        height: 4,
-                        backgroundColor: "#f3f4f6",
-                        borderRadius: 2,
-                        marginTop: 4,
-                      }}
-                    >
+                    <View style={{ height: 4, backgroundColor: "#f3f4f6", borderRadius: 2, marginTop: 4 }}>
                       <View
                         style={{
                           height: 4,
@@ -976,9 +907,7 @@ export default function DashboardScreen() {
                         }}
                       />
                     </View>
-                    <Text
-                      style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}
-                    >
+                    <Text style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
                       {item.total_qty} sold
                     </Text>
                   </View>
@@ -993,38 +922,21 @@ export default function DashboardScreen() {
         <Card>
           <SectionHeader title="Payment Methods" />
           {paymentBreakdown.length === 0 ? (
-            <Text
-              style={{
-                color: "#9ca3af",
-                textAlign: "center",
-                paddingVertical: 12,
-              }}
-            >
+            <Text style={{ color: "#9ca3af", textAlign: "center", paddingVertical: 12 }}>
               No transactions yet
             </Text>
           ) : (
             paymentBreakdown.map((p, i) => (
               <View key={i}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    paddingVertical: 10,
-                    alignItems: "center",
-                  }}
-                >
+                <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, alignItems: "center" }}>
                   <View>
-                    <Text style={{ fontWeight: "600", color: "#111827" }}>
-                      {p.payment_name}
-                    </Text>
+                    <Text style={{ fontWeight: "600", color: "#111827" }}>{p.payment_name}</Text>
                     <Text style={{ fontSize: 12, color: "#6b7280" }}>
                       {p.count} transaction{p.count !== 1 ? "s" : ""}
                     </Text>
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
-                    <Text style={{ fontWeight: "700", color: "#16a34a" }}>
-                      {currency(p.total)}
-                    </Text>
+                    <Text style={{ fontWeight: "700", color: "#16a34a" }}>{currency(p.total)}</Text>
                     <Text style={{ fontSize: 12, color: "#6b7280" }}>
                       {pctLabel(p.total, summary.total_revenue)} of total
                     </Text>
@@ -1055,66 +967,31 @@ export default function DashboardScreen() {
                   borderColor: "#16a34a",
                 }}
               >
-                <Text
-                  style={{ color: "#16a34a", fontWeight: "700", fontSize: 13 }}
-                >
-                  + Add
-                </Text>
+                <Text style={{ color: "#16a34a", fontWeight: "700", fontSize: 13 }}>+ Add</Text>
               </TouchableOpacity>
             }
           />
           {paymentTypes.length === 0 ? (
-            <Text
-              style={{
-                color: "#9ca3af",
-                textAlign: "center",
-                paddingVertical: 12,
-              }}
-            >
+            <Text style={{ color: "#9ca3af", textAlign: "center", paddingVertical: 12 }}>
               No payment types yet. Add one!
             </Text>
           ) : (
             paymentTypes.map((pt, i) => (
               <View key={pt.id}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    paddingVertical: 8,
-                  }}
-                >
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8 }}>
                   <View style={{ flex: 1, gap: 4 }}>
-                    <Text
-                      style={{
-                        fontWeight: "500",
-                        color: "#111827",
-                        fontSize: 15,
-                      }}
-                    >
-                      {pt.name}
-                    </Text>
+                    <Text style={{ fontWeight: "500", color: "#111827", fontSize: 15 }}>{pt.name}</Text>
                     <View
                       style={{
                         alignSelf: "flex-start",
                         paddingHorizontal: 8,
                         paddingVertical: 2,
                         borderRadius: 6,
-                        backgroundColor: pt.requires_reference
-                          ? "#fef9c3"
-                          : "#f3f4f6",
+                        backgroundColor: pt.requires_reference ? "#fef9c3" : "#f3f4f6",
                       }}
                     >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: "600",
-                          color: pt.requires_reference ? "#854d0e" : "#6b7280",
-                        }}
-                      >
-                        {pt.requires_reference
-                          ? "Ref No. Required"
-                          : "No Ref No."}
+                      <Text style={{ fontSize: 11, fontWeight: "600", color: pt.requires_reference ? "#854d0e" : "#6b7280" }}>
+                        {pt.requires_reference ? "Ref No. Required" : "No Ref No."}
                       </Text>
                     </View>
                   </View>
@@ -1152,9 +1029,7 @@ export default function DashboardScreen() {
               borderColor: "#fecaca",
             }}
           >
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-            >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               <View
                 style={{
                   width: 40,
@@ -1168,9 +1043,7 @@ export default function DashboardScreen() {
                 <Text style={{ fontSize: 20 }}>💸</Text>
               </View>
               <View>
-                <Text
-                  style={{ fontWeight: "700", color: "#111827", fontSize: 15 }}
-                >
+                <Text style={{ fontWeight: "700", color: "#111827", fontSize: 15 }}>
                   Manage Expenses
                 </Text>
                 <Text style={{ fontSize: 12, color: "#9ca3af" }}>
@@ -1182,15 +1055,66 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </Card>
 
-        {/* Data Management */}
+        {/* ── Data Management ─────────────────────────────────────────────── */}
         <Card>
           <SectionHeader title="Data Management" />
+
+          {/* Export */}
+          <Button
+            mode="contained"
+            buttonColor="#0ea5e9"
+            icon="database-export"
+            onPress={handleExportData}
+            disabled={isBusy}
+            loading={exporting}
+            style={{ borderRadius: 10, marginBottom: 10 }}
+            contentStyle={{ paddingVertical: 4 }}
+          >
+            Export Data (Backup)
+          </Button>
+
+          {/* Import */}
+          <Button
+            mode="contained"
+            buttonColor="#7c3aed"
+            icon="database-import"
+            onPress={handleImportData}
+            disabled={isBusy}
+            loading={importing}
+            style={{ borderRadius: 10, marginBottom: 10 }}
+            contentStyle={{ paddingVertical: 4 }}
+          >
+            Import Data (Restore)
+          </Button>
+
+          <View
+            style={{
+              backgroundColor: "#fffbeb",
+              borderRadius: 10,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: "#fde68a",
+              marginBottom: 10,
+            }}
+          >
+            <Text style={{ fontSize: 12, color: "#92400e", lineHeight: 18 }}>
+              💡 <Text style={{ fontWeight: "700" }}>Tip:</Text> Export saves all
+              your data to a JSON file you can keep as a backup or transfer to
+              another device. Import will{" "}
+              <Text style={{ fontWeight: "700" }}>replace</Text> all current data
+              with the backup file.
+            </Text>
+          </View>
+
+          <Divider style={{ marginBottom: 10 }} />
+
+          {/* Seed / Clear (existing) */}
           <Button
             mode="contained"
             buttonColor="#16a34a"
-            icon="database-import"
+            icon="database-plus"
             onPress={handleInsertArkziamData}
-            disabled={inserting || clearing}
+            disabled={isBusy}
             loading={inserting}
             style={{ borderRadius: 10, marginBottom: 10 }}
             contentStyle={{ paddingVertical: 4 }}
@@ -1202,23 +1126,15 @@ export default function DashboardScreen() {
             textColor="#ef4444"
             icon="delete-forever"
             onPress={handleClearData}
-            disabled={inserting || clearing}
+            disabled={isBusy}
             loading={clearing}
             style={{ borderRadius: 10, borderColor: "#fca5a5" }}
             contentStyle={{ paddingVertical: 4 }}
           >
             Clear All Data
           </Button>
-          <Text
-            style={{
-              fontSize: 11,
-              color: "#9ca3af",
-              textAlign: "center",
-              marginTop: 8,
-            }}
-          >
-            Clear Data removes all transactions, items, categories, payment
-            types, and PIN.
+          <Text style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 8 }}>
+            Clear Data removes all transactions, items, categories, payment types, and PIN.
           </Text>
         </Card>
 
@@ -1265,9 +1181,7 @@ export default function DashboardScreen() {
               }}
             >
               <View style={{ flex: 1 }}>
-                <Text
-                  style={{ fontWeight: "600", color: "#111827", fontSize: 14 }}
-                >
+                <Text style={{ fontWeight: "600", color: "#111827", fontSize: 14 }}>
                   Requires Reference No.
                 </Text>
                 <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
@@ -1281,9 +1195,7 @@ export default function DashboardScreen() {
                   width: 44,
                   height: 24,
                   borderRadius: 12,
-                  backgroundColor: newPaymentRequiresRef
-                    ? "#16a34a"
-                    : "#d1d5db",
+                  backgroundColor: newPaymentRequiresRef ? "#16a34a" : "#d1d5db",
                   justifyContent: "center",
                   paddingHorizontal: 3,
                 }}
@@ -1294,9 +1206,7 @@ export default function DashboardScreen() {
                     height: 18,
                     borderRadius: 9,
                     backgroundColor: "white",
-                    alignSelf: newPaymentRequiresRef
-                      ? "flex-end"
-                      : "flex-start",
+                    alignSelf: newPaymentRequiresRef ? "flex-end" : "flex-start",
                     elevation: 2,
                     shadowColor: "#000",
                     shadowOpacity: 0.2,
