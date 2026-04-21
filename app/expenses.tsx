@@ -4,9 +4,8 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
+  TextInput as RNTextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -18,7 +17,6 @@ import {
   IconButton,
   Portal,
   Text,
-  TextInput,
 } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -51,18 +49,8 @@ function formatDisplayDate(iso: string): string {
 function formatDateLabel(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+    "Jan","Feb","Mar","Apr","May","Jun",
+    "Jul","Aug","Sep","Oct","Nov","Dec",
   ];
   return `${months[m - 1]} ${d}, ${y}`;
 }
@@ -87,7 +75,118 @@ function groupByDate(expenses: ExpenseRow[]): Record<string, ExpenseRow[]> {
   return groups;
 }
 
-// ── Date Range Picker ─────────────────────────────────────────────────────────
+// ── Red Numpad ────────────────────────────────────────────────────────────────
+function AmountNumpad({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const handleKey = (key: string) => {
+    if (key === "⌫") {
+      onChange(value.slice(0, -1));
+      return;
+    }
+    if (key === "." && value.includes(".")) return;
+    if (value.includes(".") && value.split(".")[1]?.length >= 2) return;
+    onChange(value + key);
+  };
+
+  const FAST_AMOUNTS = [20, 50, 100, 200, 500];
+
+  return (
+    <View style={{ gap: 6 }}>
+      {/* Quick-select amounts */}
+      <View style={{ flexDirection: "row", gap: 5 }}>
+        {FAST_AMOUNTS.map((amt) => (
+          <TouchableOpacity
+            key={amt}
+            onPress={() => onChange(amt.toString())}
+            style={{
+              flex: 1,
+              paddingVertical: 6,
+              alignItems: "center",
+              borderRadius: 8,
+              backgroundColor: value === amt.toString() ? "#dc2626" : "#fef2f2",
+              borderWidth: 1,
+              borderColor: "#dc2626",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: "600",
+                color: value === amt.toString() ? "white" : "#dc2626",
+              }}
+            >
+              ₱{amt}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Number grid */}
+      <View
+        style={{
+          borderRadius: 10,
+          overflow: "hidden",
+          borderWidth: 1,
+          borderColor: "#fecaca",
+        }}
+      >
+        {[
+          ["7", "8", "9"],
+          ["4", "5", "6"],
+          ["1", "2", "3"],
+          [".", "0", "⌫"],
+        ].map((row, ri) => (
+          <View
+            key={ri}
+            style={{
+              flexDirection: "row",
+              borderTopWidth: ri === 0 ? 0 : 1,
+              borderTopColor: "#fecaca",
+            }}
+          >
+            {row.map((key, ki) => (
+              <TouchableOpacity
+                key={key}
+                onPress={() => handleKey(key)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor:
+                    key === "⌫"
+                      ? "#fef2f2"
+                      : ki % 2 === 0
+                      ? "#fff5f5"
+                      : "#fffafa",
+                  borderLeftWidth: ki === 0 ? 0 : 1,
+                  borderLeftColor: "#fecaca",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "600",
+                    color: key === "⌫" ? "#ef4444" : "#b91c1c",
+                  }}
+                >
+                  {key}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ── Date Range Filter (list filter bar) ──────────────────────────────────────
 function DateRangeFilter({
   fromDate,
   toDate,
@@ -115,7 +214,6 @@ function DateRangeFilter({
       }}
     >
       <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-        {/* From */}
         <TouchableOpacity
           onPress={() => setShowFromPicker(true)}
           style={{
@@ -128,19 +226,14 @@ function DateRangeFilter({
             backgroundColor: "#fef2f2",
           }}
         >
-          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>
-            FROM
-          </Text>
+          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>FROM</Text>
           <Text style={{ fontWeight: "700", color: "#dc2626", fontSize: 14 }}>
             {formatDateLabel(fromDate)}
           </Text>
         </TouchableOpacity>
 
-        <Text style={{ color: "#9ca3af", fontWeight: "700", fontSize: 16 }}>
-          →
-        </Text>
+        <Text style={{ color: "#9ca3af", fontWeight: "700", fontSize: 16 }}>→</Text>
 
-        {/* To */}
         <TouchableOpacity
           onPress={() => setShowToPicker(true)}
           style={{
@@ -153,9 +246,7 @@ function DateRangeFilter({
             backgroundColor: "#fef2f2",
           }}
         >
-          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>
-            TO
-          </Text>
+          <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>TO</Text>
           <Text style={{ fontWeight: "700", color: "#dc2626", fontSize: 14 }}>
             {formatDateLabel(toDate)}
           </Text>
@@ -191,6 +282,58 @@ function DateRangeFilter({
   );
 }
 
+// ── Form Date Button (inside dialog) ─────────────────────────────────────────
+function FormDateField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (d: string) => void;
+}) {
+  const [show, setShow] = useState(false);
+  const dateObj = new Date(value + "T00:00:00");
+
+  return (
+    <>
+      <TouchableOpacity
+        onPress={() => setShow(true)}
+        style={{
+          borderWidth: 1.5,
+          borderColor: "#fecaca",
+          borderRadius: 8,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          backgroundColor: "#fef2f2",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <View>
+          <Text style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 1 }}>DATE</Text>
+          <Text style={{ fontSize: 15, fontWeight: "700", color: "#b91c1c", marginTop: 1 }}>
+            {formatDateLabel(value)}
+          </Text>
+        </View>
+
+      </TouchableOpacity>
+
+      {show && (
+        <DateTimePicker
+          value={dateObj}
+          mode="date"
+          display="default"
+          maximumDate={new Date()}
+          onChange={(_, selected) => {
+            setShow(false);
+            if (selected) onChange(toDateString(selected));
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function ExpensesScreen() {
   const today = todayString();
@@ -218,7 +361,6 @@ export default function ExpensesScreen() {
   const days = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
   const totalFiltered = expenses.reduce((s, e) => s + e.amount, 0);
 
-  // ── Modal helpers ────────────────────────────────────────────────────────
   const openAdd = () => {
     setEditTarget(null);
     setFormDate(today);
@@ -251,10 +393,6 @@ export default function ExpensesScreen() {
     }
     if (isNaN(amount) || amount <= 0) {
       Alert.alert("Validation", "Enter a valid amount greater than 0.");
-      return;
-    }
-    if (!isValidDate(formDate)) {
-      Alert.alert("Validation", "Date must be a valid YYYY-MM-DD.");
       return;
     }
     if (editTarget) {
@@ -333,78 +471,30 @@ export default function ExpensesScreen() {
 
       {/* Content */}
       {!rangeValid ? (
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 8 }}>
           <Text style={{ fontSize: 32 }}>📅</Text>
-          <Text style={{ color: "#9ca3af", fontSize: 14 }}>
-            Enter a valid date range above
-          </Text>
+          <Text style={{ color: "#9ca3af", fontSize: 14 }}>Enter a valid date range above</Text>
         </View>
       ) : expenses.length === 0 ? (
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 8 }}>
           <Text style={{ fontSize: 40 }}>💸</Text>
-          <Text style={{ fontSize: 16, fontWeight: "700", color: "#9ca3af" }}>
-            No expenses found
-          </Text>
-          <Text
-            style={{
-              color: "#d1d5db",
-              fontSize: 13,
-              textAlign: "center",
-              paddingHorizontal: 32,
-            }}
-          >
+          <Text style={{ fontSize: 16, fontWeight: "700", color: "#9ca3af" }}>No expenses found</Text>
+          <Text style={{ color: "#d1d5db", fontSize: 13, textAlign: "center", paddingHorizontal: 32 }}>
             Tap + to log an expense, or adjust the date range
           </Text>
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 100 }}
-        >
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 100 }}>
           {days.map((day) => {
             const dayTotal = grouped[day].reduce((s, e) => s + e.amount, 0);
             return (
               <View key={day} style={{ gap: 8 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "700",
-                      color: "#6b7280",
-                      letterSpacing: 0.5,
-                    }}
-                  >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#6b7280", letterSpacing: 0.5 }}>
                     {formatDisplayDate(day).toUpperCase()}
                   </Text>
-                  <View
-                    style={{ flex: 1, height: 1, backgroundColor: "#e5e7eb" }}
-                  />
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: "#dc2626",
-                      fontWeight: "600",
-                    }}
-                  >
+                  <View style={{ flex: 1, height: 1, backgroundColor: "#e5e7eb" }} />
+                  <Text style={{ fontSize: 12, color: "#dc2626", fontWeight: "600" }}>
                     {currency(dayTotal)}
                   </Text>
                 </View>
@@ -445,39 +535,18 @@ export default function ExpensesScreen() {
                         </View>
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text
-                            style={{
-                              fontWeight: "600",
-                              color: "#111827",
-                              fontSize: 15,
-                            }}
+                            style={{ fontWeight: "600", color: "#111827", fontSize: 15 }}
                             numberOfLines={1}
                           >
                             {expense.description}
                           </Text>
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: "#9ca3af",
-                              marginTop: 2,
-                            }}
-                          >
+                          <Text style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
                             #{expense.id}
                           </Text>
                         </View>
-                        <View
-                          style={{
-                            alignItems: "flex-end",
-                            flexDirection: "row",
-                            gap: 4,
-                          }}
-                        >
+                        <View style={{ alignItems: "flex-end", flexDirection: "row", gap: 4 }}>
                           <Text
-                            style={{
-                              fontWeight: "bold",
-                              color: "#dc2626",
-                              fontSize: 16,
-                              alignSelf: "center",
-                            }}
+                            style={{ fontWeight: "bold", color: "#dc2626", fontSize: 16, alignSelf: "center" }}
                           >
                             {currency(expense.amount)}
                           </Text>
@@ -497,9 +566,7 @@ export default function ExpensesScreen() {
                           />
                         </View>
                       </View>
-                      {i < grouped[day].length - 1 && (
-                        <Divider style={{ marginLeft: 70 }} />
-                      )}
+                      {i < grouped[day].length - 1 && <Divider style={{ marginLeft: 70 }} />}
                     </View>
                   ))}
                 </View>
@@ -531,51 +598,96 @@ export default function ExpensesScreen() {
           onDismiss={closeModal}
           style={{ width: 360, alignSelf: "center" }}
         >
-          <Dialog.Title style={{ color: "#dc2626", fontWeight: "bold" }}>
-            {editTarget ? "Edit Expense" : "Add Expense"}
-          </Dialog.Title>
-          <Dialog.Content>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-              style={{ gap: 14 }}
+          {/* Compact header row with date picker inline */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 24,
+              paddingTop: 20,
+              paddingBottom: 4,
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: "#dc2626" }}>
+              {editTarget ? "Edit Expense" : "Add Expense"}
+            </Text>
+            <FormDateField value={formDate} onChange={setFormDate} />
+          </View>
+
+          <Dialog.Content style={{ gap: 8, paddingTop: 8 }}>
+            {/* Description */}
+            <View
+              style={{
+                borderWidth: 1.5,
+                borderColor: formDescription.trim() ? "#fca5a5" : "#fecaca",
+                borderRadius: 8,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                backgroundColor: "white",
+              }}
             >
-              <TextInput
-                label="Date (YYYY-MM-DD)"
-                value={formDate}
-                onChangeText={setFormDate}
-                mode="outlined"
-                outlineColor="#fecaca"
-                activeOutlineColor="#dc2626"
-                keyboardType="numbers-and-punctuation"
-                placeholder="YYYY-MM-DD"
-              />
-              <TextInput
-                label="Description"
+              <Text style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 1, marginBottom: 2 }}>
+                DESCRIPTION
+              </Text>
+              <RNTextInput
                 value={formDescription}
                 onChangeText={setFormDescription}
-                mode="outlined"
-                outlineColor="#fecaca"
-                activeOutlineColor="#dc2626"
                 placeholder="e.g. Ink cartridge, Electricity bill"
+                placeholderTextColor="#d1d5db"
                 autoFocus={!editTarget}
+                style={{ fontSize: 15, color: "#111827", padding: 0, margin: 0 }}
               />
-              <TextInput
-                label="Amount (₱)"
-                value={formAmount}
-                onChangeText={setFormAmount}
-                mode="outlined"
-                outlineColor="#fecaca"
-                activeOutlineColor="#dc2626"
-                keyboardType="decimal-pad"
-                placeholder="0.00"
-                left={<TextInput.Affix text="₱" />}
-              />
-            </KeyboardAvoidingView>
+            </View>
+
+            {/* Amount display */}
+            <View
+              style={{
+                borderWidth: 1.5,
+                borderColor: "#fecaca",
+                borderRadius: 8,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                backgroundColor: "#fef2f2",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View>
+                <Text style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 1 }}>AMOUNT</Text>
+                <Text
+                  style={{
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    color: formAmount ? "#b91c1c" : "#fca5a5",
+                    marginTop: 1,
+                  }}
+                >
+                  ₱{formAmount === "" ? "0.00" : parseFloat(formAmount || "0").toFixed(2)}
+                </Text>
+              </View>
+              {formAmount !== "" && (
+                <TouchableOpacity
+                  onPress={() => setFormAmount("")}
+                  style={{
+                    backgroundColor: "#fecaca",
+                    borderRadius: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, color: "#dc2626", fontWeight: "600" }}>Clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Built-in numpad */}
+            <AmountNumpad value={formAmount} onChange={setFormAmount} />
           </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={closeModal} textColor="#6b7280">
-              Cancel
-            </Button>
+
+          <Dialog.Actions style={{ paddingTop: 4, paddingBottom: 12 }}>
+            <Button onPress={closeModal} textColor="#6b7280">Cancel</Button>
             <Button
               mode="contained"
               buttonColor="#dc2626"

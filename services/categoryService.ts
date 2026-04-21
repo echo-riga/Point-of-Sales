@@ -7,16 +7,18 @@ export const categoryService = {
   getById: (id: number) =>
     db.getFirstSync("SELECT * FROM categories WHERE id = ?", [id]),
 
-  create: (payload: { name: string }) => {
-    const result = db.runSync("INSERT INTO categories (name) VALUES (?)", [
-      payload.name,
-    ]);
+  create: (payload: { name: string; color: string }) => {
+    const result = db.runSync(
+      "INSERT INTO categories (name, color) VALUES (?, ?)",
+      [payload.name, payload.color],
+    );
     return result.lastInsertRowId;
   },
 
-  update: (id: number, payload: { name: string }) => {
-    db.runSync("UPDATE categories SET name = ? WHERE id = ?", [
+  update: (id: number, payload: { name: string; color: string }) => {
+    db.runSync("UPDATE categories SET name = ?, color = ? WHERE id = ?", [
       payload.name,
+      payload.color,
       id,
     ]);
   },

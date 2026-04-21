@@ -458,23 +458,26 @@ function importAllTables(data: ReturnType<typeof exportAllTables>) {
       DELETE FROM expenses;
     `);
 
-    for (const r of (data.categories as any[])) {
-      db.runSync("INSERT INTO categories (id, name) VALUES (?, ?)", [r.id, r.name]);
-    }
+   for (const r of (data.categories as any[])) {
+  db.runSync(
+    "INSERT INTO categories (id, name, color) VALUES (?, ?, ?)",
+    [r.id, r.name, r.color ?? '#16a34a'],
+  );
+}
 
-    for (const r of (data.subcategories as any[])) {
-      db.runSync(
-        "INSERT INTO subcategories (id, category_id, name) VALUES (?, ?, ?)",
-        [r.id, r.category_id, r.name],
-      );
-    }
+for (const r of (data.subcategories as any[])) {
+  db.runSync(
+    "INSERT INTO subcategories (id, category_id, name, color) VALUES (?, ?, ?, ?)",
+    [r.id, r.category_id, r.name, r.color ?? '#2563eb'],
+  );
+}
 
-    for (const r of (data.items as any[])) {
-      db.runSync(
-        "INSERT INTO items (id, category_id, subcategory_id, name) VALUES (?, ?, ?, ?)",
-        [r.id, r.category_id, r.subcategory_id, r.name],
-      );
-    }
+for (const r of (data.items as any[])) {
+  db.runSync(
+    "INSERT INTO items (id, category_id, subcategory_id, name, color) VALUES (?, ?, ?, ?, ?)",
+    [r.id, r.category_id, r.subcategory_id, r.name, r.color ?? '#f0fdf4'],
+  );
+}
 
     for (const r of (data.payment_types as any[])) {
       db.runSync(

@@ -8,77 +8,33 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 import { Button, Dialog, Divider, Portal, Text } from "react-native-paper";
+import {
+  resolveColor,
+  CATEGORY_PALETTE,
+  SUBCATEGORY_PALETTE,
+  ITEM_PALETTE,
+} from "@/components/ColorPicker";
 
 interface Item {
   id: number;
   name: string;
+  color: string;
   category_id: number | null;
   category_name: string | null;
   subcategory_id: number | null;
   subcategory_name: string | null;
 }
 
-interface Option {
+interface CategoryOption {
   id: number;
   name: string;
+  color: string;
 }
 
-// ── Color Palette ─────────────────────────────────────────────────────────────
-// Each entry: [background, text, border]
-const CATEGORY_COLORS: [string, string, string][] = [
-  ["#16a34a", "#ffffff", "#15803d"], // green
-  ["#2563eb", "#ffffff", "#1d4ed8"], // blue
-  ["#dc2626", "#ffffff", "#b91c1c"], // red
-  ["#d97706", "#ffffff", "#b45309"], // amber
-  ["#7c3aed", "#ffffff", "#6d28d9"], // violet
-  ["#0891b2", "#ffffff", "#0e7490"], // cyan
-  ["#db2777", "#ffffff", "#be185d"], // pink
-  ["#65a30d", "#ffffff", "#4d7c0f"], // lime
-  ["#ea580c", "#ffffff", "#c2410c"], // orange
-  ["#0f766e", "#ffffff", "#0d9488"], // teal
-  ["#4f46e5", "#ffffff", "#4338ca"], // indigo
-  ["#be123c", "#ffffff", "#9f1239"], // rose
-];
-
-const SUBCATEGORY_COLORS: [string, string, string][] = [
-  ["#dbeafe", "#1e40af", "#bfdbfe"], // blue
-  ["#fce7f3", "#9d174d", "#fbcfe8"], // pink
-  ["#d1fae5", "#065f46", "#a7f3d0"], // green
-  ["#fef3c7", "#92400e", "#fde68a"], // amber
-  ["#ede9fe", "#4c1d95", "#ddd6fe"], // violet
-  ["#cffafe", "#164e63", "#a5f3fc"], // cyan
-  ["#fee2e2", "#7f1d1d", "#fecaca"], // red
-  ["#ecfccb", "#365314", "#d9f99d"], // lime
-  ["#ffedd5", "#7c2d12", "#fed7aa"], // orange
-  ["#ccfbf1", "#134e4a", "#99f6e4"], // teal
-  ["#e0e7ff", "#1e1b4b", "#c7d2fe"], // indigo
-  ["#ffe4e6", "#881337", "#fda4af"], // rose
-];
-
-const ITEM_COLORS: [string, string, string][] = [
-  ["#f0fdf4", "#15803d", "#bbf7d0"], // green
-  ["#eff6ff", "#1d4ed8", "#bfdbfe"], // blue
-  ["#fef9c3", "#854d0e", "#fde68a"], // yellow
-  ["#fdf4ff", "#7e22ce", "#e9d5ff"], // purple
-  ["#fff7ed", "#c2410c", "#fed7aa"], // orange
-  ["#f0f9ff", "#0369a1", "#bae6fd"], // sky
-  ["#fdf2f8", "#9d174d", "#fbcfe8"], // pink
-  ["#f7fee7", "#3f6212", "#d9f99d"], // lime
-  ["#fefce8", "#713f12", "#fef08a"], // yellow-warm
-  ["#f0fdfa", "#0f766e", "#99f6e4"], // teal
-  ["#eef2ff", "#3730a3", "#c7d2fe"], // indigo
-  ["#fff1f2", "#be123c", "#fecdd3"], // rose
-];
-
-/** Pick a color deterministically by index, cycling through the palette. */
-function categoryColor(index: number): [string, string, string] {
-  return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
-}
-function subcategoryColor(index: number): [string, string, string] {
-  return SUBCATEGORY_COLORS[index % SUBCATEGORY_COLORS.length];
-}
-function itemColor(index: number): [string, string, string] {
-  return ITEM_COLORS[index % ITEM_COLORS.length];
+interface SubcategoryOption {
+  id: number;
+  name: string;
+  color: string;
 }
 
 // ── Numpad ────────────────────────────────────────────────────────────────────
@@ -187,8 +143,8 @@ function Numpad({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OrderScreen() {
   const [items, setItems] = useState<Item[]>([]);
-  const [categories, setCategories] = useState<Option[]>([]);
-  const [subcategories, setSubcategories] = useState<Option[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [subcategories, setSubcategories] = useState<SubcategoryOption[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null);
 
@@ -202,7 +158,7 @@ export default function OrderScreen() {
   useFocusEffect(
     useCallback(() => {
       setItems(itemService.getAll() as Item[]);
-      setCategories(categoryService.getAll() as Option[]);
+      setCategories(categoryService.getAll() as CategoryOption[]);
       setSelectedCategory(null);
       setSelectedSubcategory(null);
       setSubcategories([]);
@@ -218,7 +174,7 @@ export default function OrderScreen() {
     }
     setSelectedCategory(catId);
     setSelectedSubcategory(null);
-    setSubcategories(subcategoryService.getByCategory(catId) as Option[]);
+    setSubcategories(subcategoryService.getByCategory(catId) as SubcategoryOption[]);
   };
 
   const handleSubcategoryPress = (subId: number) => {
@@ -255,16 +211,16 @@ export default function OrderScreen() {
     ? items.filter((i) => i.subcategory_id === selectedSubcategory)
     : [];
 
-  // ── Colored card renderers ────────────────────────────────────────────────
+  // ── Card renderers (use saved color from DB) ──────────────────────────────
 
-  const renderCategoryCard = (cat: Option, index: number) => {
-    const [bg, text, border] = categoryColor(index);
+  const renderCategoryCard = (cat: CategoryOption) => {
+    const entry = resolveColor(cat.color, CATEGORY_PALETTE);
     return (
       <TouchableOpacity
         key={`cat-${cat.id}`}
         onPress={() => handleCategoryPress(cat.id)}
         style={{
-          backgroundColor: bg,
+          backgroundColor: entry.bg,
           borderRadius: 12,
           padding: 16,
           margin: 6,
@@ -273,29 +229,29 @@ export default function OrderScreen() {
           justifyContent: "center",
           minHeight: 80,
           borderWidth: 2,
-          borderColor: border,
+          borderColor: entry.border,
           elevation: 3,
-          shadowColor: bg,
+          shadowColor: entry.bg,
           shadowOpacity: 0.4,
           shadowRadius: 6,
         }}
       >
-        <Text style={{ textAlign: "center", fontWeight: "bold", color: text, fontSize: 13 }}>
+        <Text style={{ textAlign: "center", fontWeight: "bold", color: entry.text, fontSize: 13 }}>
           {cat.name}
         </Text>
       </TouchableOpacity>
     );
   };
 
-  const renderSubcategoryCard = (sub: Option, index: number) => {
-    const [bg, text, border] = subcategoryColor(index);
+  const renderSubcategoryCard = (sub: SubcategoryOption) => {
+    const entry = resolveColor(sub.color, SUBCATEGORY_PALETTE);
     const isSelected = selectedSubcategory === sub.id;
     return (
       <TouchableOpacity
         key={`sub-${sub.id}`}
         onPress={() => handleSubcategoryPress(sub.id)}
         style={{
-          backgroundColor: isSelected ? "#16a34a" : bg,
+          backgroundColor: isSelected ? "#16a34a" : entry.bg,
           borderRadius: 12,
           padding: 16,
           margin: 6,
@@ -304,28 +260,28 @@ export default function OrderScreen() {
           justifyContent: "center",
           minHeight: 80,
           borderWidth: 2,
-          borderColor: isSelected ? "#15803d" : border,
+          borderColor: isSelected ? "#15803d" : entry.border,
           elevation: isSelected ? 4 : 2,
           shadowColor: "#000",
           shadowOpacity: 0.1,
           shadowRadius: 4,
         }}
       >
-        <Text style={{ textAlign: "center", fontWeight: "bold", color: isSelected ? "#ffffff" : text, fontSize: 13 }}>
+        <Text style={{ textAlign: "center", fontWeight: "bold", color: isSelected ? "#ffffff" : entry.text, fontSize: 13 }}>
           {sub.name}
         </Text>
       </TouchableOpacity>
     );
   };
 
-  const renderItemCard = (item: Item, index: number) => {
-    const [bg, text, border] = itemColor(index);
+  const renderItemCard = (item: Item) => {
+    const entry = resolveColor(item.color, ITEM_PALETTE);
     return (
       <TouchableOpacity
         key={item.id}
         onPress={() => handleItemPress(item)}
         style={{
-          backgroundColor: bg,
+          backgroundColor: entry.bg,
           borderRadius: 12,
           padding: 16,
           margin: 6,
@@ -334,14 +290,14 @@ export default function OrderScreen() {
           justifyContent: "center",
           minHeight: 80,
           borderWidth: 1.5,
-          borderColor: border,
+          borderColor: entry.border,
           elevation: 2,
           shadowColor: "#000",
           shadowOpacity: 0.06,
           shadowRadius: 4,
         }}
       >
-        <Text style={{ textAlign: "center", fontWeight: "700", color: text, fontSize: 13 }}>
+        <Text style={{ textAlign: "center", fontWeight: "700", color: entry.text, fontSize: 13 }}>
           {item.name}
         </Text>
       </TouchableOpacity>
@@ -352,23 +308,13 @@ export default function OrderScreen() {
     const cards: React.ReactNode[] = [];
 
     if (selectedSubcategory) {
-      itemsInSelectedSubcategory.forEach((item, i) =>
-        cards.push(renderItemCard(item, i)),
-      );
+      itemsInSelectedSubcategory.forEach((item) => cards.push(renderItemCard(item)));
     } else if (selectedCategory) {
-      subcategories.forEach((sub, i) =>
-        cards.push(renderSubcategoryCard(sub, i)),
-      );
-      itemsInSelectedCategoryNoSubcat.forEach((item, i) =>
-        cards.push(renderItemCard(item, subcategories.length + i)),
-      );
+      subcategories.forEach((sub) => cards.push(renderSubcategoryCard(sub)));
+      itemsInSelectedCategoryNoSubcat.forEach((item) => cards.push(renderItemCard(item)));
     } else {
-      categories.forEach((cat, i) =>
-        cards.push(renderCategoryCard(cat, i)),
-      );
-      noCategoyItems.forEach((item, i) =>
-        cards.push(renderItemCard(item, categories.length + i)),
-      );
+      categories.forEach((cat) => cards.push(renderCategoryCard(cat)));
+      noCategoyItems.forEach((item) => cards.push(renderItemCard(item)));
     }
 
     return cards;

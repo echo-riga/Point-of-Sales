@@ -1,10 +1,11 @@
 // services/itemService.ts
 import db from "./db";
+
 export const itemService = {
   getAll: () => {
     return db.getAllSync(`
       SELECT 
-        i.id, i.name,
+        i.id, i.name, i.color,
         c.id as category_id, c.name as category_name,
         s.id as subcategory_id, s.name as subcategory_name
       FROM items i
@@ -17,7 +18,7 @@ export const itemService = {
     return db.getFirstSync(
       `
       SELECT 
-        i.id, i.name,
+        i.id, i.name, i.color,
         c.id as category_id, c.name as category_name,
         s.id as subcategory_id, s.name as subcategory_name
       FROM items i
@@ -31,13 +32,15 @@ export const itemService = {
 
   create: (payload: {
     name: string;
+    color: string;
     category_id?: number | null;
     subcategory_id?: number | null;
   }) => {
     const result = db.runSync(
-      "INSERT INTO items (name, category_id, subcategory_id) VALUES (?, ?, ?)",
+      "INSERT INTO items (name, color, category_id, subcategory_id) VALUES (?, ?, ?, ?)",
       [
         payload.name,
+        payload.color,
         payload.category_id ?? null,
         payload.subcategory_id ?? null,
       ],
@@ -49,14 +52,16 @@ export const itemService = {
     id: number,
     payload: {
       name: string;
+      color: string;
       category_id?: number | null;
       subcategory_id?: number | null;
     },
   ) => {
     db.runSync(
-      "UPDATE items SET name = ?, category_id = ?, subcategory_id = ? WHERE id = ?",
+      "UPDATE items SET name = ?, color = ?, category_id = ?, subcategory_id = ? WHERE id = ?",
       [
         payload.name,
+        payload.color,
         payload.category_id ?? null,
         payload.subcategory_id ?? null,
         id,
