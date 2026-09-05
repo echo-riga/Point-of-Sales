@@ -6,14 +6,19 @@ import { itemService } from "@/services/itemService";
 import { subcategoryService } from "@/services/subcategoryService";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { Button, Dialog, Divider, Portal, Text } from "react-native-paper";
 import {
-  resolveColor,
   CATEGORY_PALETTE,
   SUBCATEGORY_PALETTE,
   ITEM_PALETTE,
 } from "@/components/ColorPicker";
+import ProductTile from "@/components/ProductTile";
 
 interface Item {
   id: number;
@@ -142,6 +147,9 @@ function Numpad({
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OrderScreen() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [subcategories, setSubcategories] = useState<SubcategoryOption[]>([]);
@@ -203,7 +211,7 @@ export default function OrderScreen() {
     setSelectedItem(null);
   };
 
-  const noCategoyItems = items.filter((i) => !i.category_id);
+  const noCategoryItems = items.filter((i) => !i.category_id);
   const itemsInSelectedCategoryNoSubcat = selectedCategory
     ? items.filter((i) => i.category_id === selectedCategory && !i.subcategory_id)
     : [];
@@ -211,98 +219,42 @@ export default function OrderScreen() {
     ? items.filter((i) => i.subcategory_id === selectedSubcategory)
     : [];
 
-  // ── Card renderers (use saved color from DB) ──────────────────────────────
-
-  const renderCategoryCard = (cat: CategoryOption) => {
-    const entry = resolveColor(cat.color, CATEGORY_PALETTE);
-    return (
-      <TouchableOpacity
-        key={`cat-${cat.id}`}
-        onPress={() => handleCategoryPress(cat.id)}
-        style={{
-          backgroundColor: entry.bg,
-          borderRadius: 12,
-          padding: 16,
-          margin: 6,
-          width: 120,
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 80,
-          borderWidth: 2,
-          borderColor: entry.border,
-          elevation: 3,
-          shadowColor: entry.bg,
-          shadowOpacity: 0.4,
-          shadowRadius: 6,
-        }}
-      >
-        <Text style={{ textAlign: "center", fontWeight: "bold", color: entry.text, fontSize: 13 }}>
-          {cat.name}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  // ── Card renderers ─────────────────────────────────────────────────────────
+  const renderCategoryCard = (cat: CategoryOption) => (
+    <ProductTile
+      key={`cat-${cat.id}`}
+      name={cat.name}
+      color={cat.color}
+      palette={CATEGORY_PALETTE}
+      onPress={() => handleCategoryPress(cat.id)}
+      badgeText="Category"
+    />
+  );
 
   const renderSubcategoryCard = (sub: SubcategoryOption) => {
-    const entry = resolveColor(sub.color, SUBCATEGORY_PALETTE);
     const isSelected = selectedSubcategory === sub.id;
     return (
-      <TouchableOpacity
+      <ProductTile
         key={`sub-${sub.id}`}
+        name={sub.name}
+        color={isSelected ? "#16a34a" : sub.color}
+        palette={SUBCATEGORY_PALETTE}
         onPress={() => handleSubcategoryPress(sub.id)}
-        style={{
-          backgroundColor: isSelected ? "#16a34a" : entry.bg,
-          borderRadius: 12,
-          padding: 16,
-          margin: 6,
-          width: 120,
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 80,
-          borderWidth: 2,
-          borderColor: isSelected ? "#15803d" : entry.border,
-          elevation: isSelected ? 4 : 2,
-          shadowColor: "#000",
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        }}
-      >
-        <Text style={{ textAlign: "center", fontWeight: "bold", color: isSelected ? "#ffffff" : entry.text, fontSize: 13 }}>
-          {sub.name}
-        </Text>
-      </TouchableOpacity>
+        badgeText="Subcategory"
+      />
     );
   };
 
-  const renderItemCard = (item: Item) => {
-    const entry = resolveColor(item.color, ITEM_PALETTE);
-    return (
-      <TouchableOpacity
-        key={item.id}
-        onPress={() => handleItemPress(item)}
-        style={{
-          backgroundColor: entry.bg,
-          borderRadius: 12,
-          padding: 16,
-          margin: 6,
-          width: 120,
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 80,
-          borderWidth: 1.5,
-          borderColor: entry.border,
-          elevation: 2,
-          shadowColor: "#000",
-          shadowOpacity: 0.06,
-          shadowRadius: 4,
-        }}
-      >
-        <Text style={{ textAlign: "center", fontWeight: "700", color: entry.text, fontSize: 13 }}>
-          {item.name}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  const renderItemCard = (item: Item) => (
+    <ProductTile
+      key={`item-${item.id}`}
+      name={item.name}
+      color={item.color}
+      palette={ITEM_PALETTE}
+      onPress={() => handleItemPress(item)}
+      badgeText="Product"
+    />
+  );
 
   const renderGrid = () => {
     const cards: React.ReactNode[] = [];
@@ -314,7 +266,7 @@ export default function OrderScreen() {
       itemsInSelectedCategoryNoSubcat.forEach((item) => cards.push(renderItemCard(item)));
     } else {
       categories.forEach((cat) => cards.push(renderCategoryCard(cat)));
-      noCategoyItems.forEach((item) => cards.push(renderItemCard(item)));
+      noCategoryItems.forEach((item) => cards.push(renderItemCard(item)));
     }
 
     return cards;
@@ -331,11 +283,16 @@ export default function OrderScreen() {
   });
 
   return (
-    <View style={{ flex: 1, flexDirection: "row" }}>
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: "#f9fafb" }}>
       {/* Left - Products */}
-      <View style={{ flex: 2, padding: 16 }}>
+      <View
+        style={{
+          flex: isLandscape ? 2 : 1.4,
+          padding: 14,
+        }}
+      >
         {/* Breadcrumb */}
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, alignItems: "center" }}>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 10, alignItems: "center" }}>
           <TouchableOpacity
             onPress={() => {
               setSelectedCategory(null);
@@ -343,13 +300,13 @@ export default function OrderScreen() {
               setSubcategories([]);
             }}
           >
-            <Text variant="bodyMedium" style={{ color: "#16a34a" }}>All</Text>
+            <Text variant="bodyMedium" style={{ color: "#16a34a", fontWeight: "600" }}>All</Text>
           </TouchableOpacity>
           {selectedCategory && (
             <>
               <Text variant="bodyMedium"> › </Text>
               <TouchableOpacity onPress={() => setSelectedSubcategory(null)}>
-                <Text variant="bodyMedium" style={{ color: "#16a34a" }}>
+                <Text variant="bodyMedium" style={{ color: "#16a34a", fontWeight: "600" }}>
                   {categories.find((c) => c.id === selectedCategory)?.name}
                 </Text>
               </TouchableOpacity>
@@ -358,7 +315,7 @@ export default function OrderScreen() {
           {selectedSubcategory && (
             <>
               <Text variant="bodyMedium"> › </Text>
-              <Text variant="bodyMedium">
+              <Text variant="bodyMedium" style={{ fontWeight: "600" }}>
                 {subcategories.find((s) => s.id === selectedSubcategory)?.name}
               </Text>
             </>
@@ -368,14 +325,22 @@ export default function OrderScreen() {
         <Divider />
 
         <ScrollView
-          contentContainerStyle={{ flexDirection: "row", flexWrap: "wrap", paddingTop: 12 }}
+          contentContainerStyle={{ flexDirection: "row", flexWrap: "wrap", paddingTop: 10 }}
         >
           {renderGrid()}
         </ScrollView>
       </View>
 
       {/* Right - Cart */}
-      <CartSidebar />
+      <View
+        style={{
+          flex: 1,
+          maxWidth: isLandscape ? 380 : undefined,
+          minWidth: 260,
+        }}
+      >
+        <CartSidebar />
+      </View>
 
       {/* Item Modal */}
       <Portal>
@@ -384,10 +349,7 @@ export default function OrderScreen() {
           onDismiss={() => setSelectedItem(null)}
           style={{
             alignSelf: "center",
-            width: 380,
-            position: "absolute",
-            left: "50%",
-            transform: [{ translateX: -190 }],
+            width: Math.min(width * 0.9, 400),
           }}
         >
           <Dialog.Title style={{ color: "#15803d", fontWeight: "bold" }}>

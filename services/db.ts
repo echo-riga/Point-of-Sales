@@ -52,10 +52,11 @@ export function setupDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       transaction_id INTEGER,
       item_id INTEGER,
+      item_name TEXT,
       price REAL NOT NULL,
       qty INTEGER NOT NULL,
       total REAL NOT NULL,
-      FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL,
+      FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
       FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL
     );
 
@@ -67,11 +68,12 @@ export function setupDatabase() {
     );
   `);
 
-  // ── Migrations: safely add color columns to existing DBs ──────────────────
+  // ── Migrations: safely add columns to existing DBs ────────────────────────
   const migrations = [
     "ALTER TABLE categories ADD COLUMN color TEXT NOT NULL DEFAULT '#16a34a'",
     "ALTER TABLE subcategories ADD COLUMN color TEXT NOT NULL DEFAULT '#2563eb'",
     "ALTER TABLE items ADD COLUMN color TEXT NOT NULL DEFAULT '#f0fdf4'",
+    "ALTER TABLE transaction_items ADD COLUMN item_name TEXT",
   ];
   for (const sql of migrations) {
     try {
@@ -79,6 +81,17 @@ export function setupDatabase() {
     } catch {
       // Column already exists — safe to ignore
     }
+  }
+
+  // Backfill item_name for old transaction items if NULL
+  try {
+    db.execSync(`
+      UPDATE transaction_items
+      SET item_name = (SELECT name FROM items WHERE items.id = transaction_items.item_id)
+      WHERE item_name IS NULL AND item_id IS NOT NULL;
+    `);
+  } catch {
+    // ignore
   }
 }
 

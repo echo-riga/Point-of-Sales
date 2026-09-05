@@ -67,9 +67,9 @@ export const transactionService = {
 
     for (const item of items) {
       db.runSync(
-        `INSERT INTO transaction_items (transaction_id, item_id, price, qty, total)
-         VALUES (?, ?, ?, ?, ?)`,
-        [transactionId, item.id, item.price, item.qty, item.price * item.qty],
+        `INSERT INTO transaction_items (transaction_id, item_id, item_name, price, qty, total)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [transactionId, item.id, item.name, item.price, item.qty, item.price * item.qty],
       );
     }
 
@@ -119,7 +119,7 @@ export const transactionService = {
       SELECT
         ti.id,
         ti.item_id,
-        i.name AS item_name,
+        COALESCE(ti.item_name, i.name, 'Unknown item') AS item_name,
         ti.price,
         ti.qty,
         ti.total
@@ -133,6 +133,7 @@ export const transactionService = {
   },
 
   delete(id: number): void {
+    db.runSync(`DELETE FROM transaction_items WHERE transaction_id = ?`, [id]);
     db.runSync(`DELETE FROM transactions WHERE id = ?`, [id]);
   },
 };

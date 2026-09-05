@@ -5,7 +5,13 @@ import { paymentTypeService } from "@/services/paymentTypeService";
 import { transactionService } from "@/services/transactionService";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { Button, Divider, RadioButton, Text } from "react-native-paper";
 
 interface PaymentType {
@@ -17,6 +23,10 @@ interface PaymentType {
 type Stage = "input" | "paid";
 
 export default function CheckoutScreen() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+  const isWide = width >= 750;
+
   const items = useCartStore((s) => s.items);
   const clear = useCartStore((s) => s.clear);
 
@@ -54,27 +64,38 @@ export default function CheckoutScreen() {
     setReferenceNumber("");
   };
 
+  const [paidItems, setPaidItems] = useState<typeof items>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const handleCharge = () => {
-    if (!canCharge || selectedPaymentType === null) return;
+    if (!canCharge || selectedPaymentType === null || isProcessing || stage === "paid") return;
+    setIsProcessing(true);
 
-    transactionService.create({
-      paymentTypeId: selectedPaymentType,
-      referenceNumber: needsRef ? referenceNumber.trim() : null,
-      items: items.map((i) => ({
-        id: i.id,
-        name: i.name,
-        price: i.price,
-        qty: i.qty,
-      })),
-    });
+    try {
+      const snapshot = [...items];
+      setPaidItems(snapshot);
 
-    setFinalRefNumber(needsRef ? referenceNumber.trim() : null);
-    setFinalChange(cashAmount - totalPrice);
-    setStage("paid");
+      transactionService.create({
+        paymentTypeId: selectedPaymentType,
+        referenceNumber: needsRef ? referenceNumber.trim() : null,
+        items: snapshot.map((i) => ({
+          id: i.id,
+          name: i.name,
+          price: i.price,
+          qty: i.qty,
+        })),
+      });
+
+      setFinalRefNumber(needsRef ? referenceNumber.trim() : null);
+      setFinalChange(cashAmount - totalPrice);
+      clear(); // Clear cart immediately so transaction is done
+      setStage("paid");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleNewSale = () => {
-    clear();
     router.back();
   };
 
@@ -83,24 +104,35 @@ export default function CheckoutScreen() {
   // ── Paid Screen ─────────────────────────────────────────────────────────────
   if (stage === "paid") {
     return (
-      <View style={{ flex: 1, flexDirection: "row" }}>
-        <CartSidebar readonly />
+      <View
+        style={{
+          flex: 1,
+          flexDirection: isWide ? "row" : "column",
+          backgroundColor: "#f9fafb",
+        }}
+      >
+        {isWide && (
+          <View style={{ width: 320 }}>
+            <CartSidebar readonly items={paidItems} />
+          </View>
+        )}
         <View
           style={{
-            flex: 2,
-            padding: 32,
+            flex: 1,
+            padding: 24,
             justifyContent: "center",
             alignItems: "center",
-            gap: 24,
+            gap: 20,
+            backgroundColor: "#f9fafb",
           }}
         >
           <View
             style={{
               backgroundColor: "#f0fdf4",
               borderRadius: 20,
-              padding: 40,
+              padding: 32,
               alignItems: "center",
-              gap: 16,
+              gap: 14,
               width: "100%",
               maxWidth: 440,
               borderWidth: 1,
@@ -109,15 +141,15 @@ export default function CheckoutScreen() {
           >
             <View
               style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
+                width: 56,
+                height: 56,
+                borderRadius: 28,
                 backgroundColor: "#16a34a",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: "white", fontSize: 32 }}>✓</Text>
+              <Text style={{ color: "white", fontSize: 28 }}>✓</Text>
             </View>
             <Text
               variant="headlineSmall"
@@ -171,11 +203,19 @@ export default function CheckoutScreen() {
 
   // ── Input Screen ─────────────────────────────────────────────────────────────
   return (
-    <View style={{ flex: 1, flexDirection: "row" }}>
-      <CartSidebar readonly />
+    <View
+      style={{
+        flex: 1,
+        flexDirection: isWide ? "row" : "column",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <View style={{ width: isWide ? 320 : "100%", maxHeight: isWide ? undefined : 160 }}>
+        <CartSidebar readonly />
+      </View>
       <ScrollView
-        style={{ flex: 2 }}
-        contentContainerStyle={{ padding: 20, gap: 20 }}
+        style={{ flex: 1, backgroundColor: "#f9fafb" }}
+        contentContainerStyle={{ padding: 16, gap: 16, maxWidth: 800, alignSelf: "center", width: "100%" }}
       >
         {/* Amount Due */}
         <View
@@ -402,11 +442,12 @@ export default function CheckoutScreen() {
         <Button
           mode="contained"
           onPress={handleCharge}
-          disabled={!canCharge}
+          disabled={!canCharge || isProcessing}
+          loading={isProcessing}
           style={{
             borderRadius: 12,
             backgroundColor:
-              isInsufficient || cash === "" || refMissing
+              isInsufficient || cash === "" || refMissing || isProcessing
                 ? "#9ca3af"
                 : "#16a34a",
           }}

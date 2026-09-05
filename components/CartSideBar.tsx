@@ -1,17 +1,20 @@
-// components/CartSidebar.tsx
+// components/CartSideBar.tsx
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Text, Button, Divider } from "react-native-paper";
 import { router } from "expo-router";
-import { useCartStore } from "@/context/CartItem";
+import { useCartStore, CartItem } from "@/context/CartItem";
 
 interface Props {
   readonly?: boolean;
+  items?: CartItem[];
 }
 
-export default function CartSidebar({ readonly = false }: Props) {
-  const items = useCartStore((s) => s.items);
+export default function CartSidebar({ readonly = false, items: customItems }: Props) {
+  const storeItems = useCartStore((s) => s.items);
   const removeOne = useCartStore((s) => s.removeOne);
   const removeAll = useCartStore((s) => s.removeAll);
+
+  const items = customItems ?? storeItems;
 
   const totalQty = items.reduce((sum, i) => sum + i.qty, 0);
   const totalPrice = items.reduce((sum, i) => sum + i.price * i.qty, 0);
@@ -75,7 +78,7 @@ export default function CartSidebar({ readonly = false }: Props) {
             Total
           </Text>
           <Text variant="titleMedium" style={{ fontWeight: "bold" }}>
-            ₱{totalPrice}
+            ₱{totalPrice.toFixed(2)}
           </Text>
         </View>
       </View>

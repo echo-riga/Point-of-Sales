@@ -2,7 +2,13 @@
 import { transactionService } from "@/services/transactionService";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, TouchableOpacity, View, KeyboardAvoidingView, Platform } from "react-native";
+import {
+  ScrollView,
+  TouchableOpacity,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { Divider, Text } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -40,19 +46,36 @@ function formatDisplayDate(iso: string): string {
 
 function formatDateLabel(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   return `${months[m - 1]} ${d}, ${y}`;
 }
 
 function todayString(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+    now.getDate()
+  )}`;
 }
 
 function toDateString(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )}`;
 }
 
 function isValidDate(str: string): boolean {
@@ -99,8 +122,9 @@ function DateRangeFilter({
       style={{
         backgroundColor: "white",
         paddingHorizontal: 16,
-        paddingVertical: 14,
-        elevation: 1,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#e5e7eb",
       }}
     >
       <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
@@ -112,7 +136,7 @@ function DateRangeFilter({
             borderWidth: 1.5,
             borderColor: "#bbf7d0",
             borderRadius: 10,
-            paddingVertical: 10,
+            paddingVertical: 8,
             paddingHorizontal: 12,
             backgroundColor: "#f0fdf4",
           }}
@@ -120,7 +144,7 @@ function DateRangeFilter({
           <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>
             FROM
           </Text>
-          <Text style={{ fontWeight: "700", color: "#16a34a", fontSize: 14 }}>
+          <Text style={{ fontWeight: "700", color: "#16a34a", fontSize: 13 }}>
             {formatDateLabel(fromDate)}
           </Text>
         </TouchableOpacity>
@@ -137,7 +161,7 @@ function DateRangeFilter({
             borderWidth: 1.5,
             borderColor: "#bbf7d0",
             borderRadius: 10,
-            paddingVertical: 10,
+            paddingVertical: 8,
             paddingHorizontal: 12,
             backgroundColor: "#f0fdf4",
           }}
@@ -145,7 +169,7 @@ function DateRangeFilter({
           <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>
             TO
           </Text>
-          <Text style={{ fontWeight: "700", color: "#16a34a", fontSize: 14 }}>
+          <Text style={{ fontWeight: "700", color: "#16a34a", fontSize: 13 }}>
             {formatDateLabel(toDate)}
           </Text>
         </TouchableOpacity>
@@ -207,42 +231,40 @@ export default function TransactionsScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: "#f9fafb" }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
     >
-      <View style={{ flex: 1, backgroundColor: "#f3f4f6" }}>
-        {/* Summary bar */}
-        <View
-          style={{
-            backgroundColor: "#16a34a",
-            paddingHorizontal: 20,
-            paddingVertical: 14,
-            alignItems: "center",
-            gap: 2,
-          }}
-        >
-          <Text style={{ color: "#bbf7d0", fontSize: 11, letterSpacing: 1 }}>
-            TOTAL TRANSACTIONS
-          </Text>
-          <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
-            {transactions.length}
-          </Text>
-          <Text style={{ color: "#86efac", fontSize: 12 }}>
-            {currency(transactions.reduce((s, t) => s + t.total_price, 0))}
-            {rangeValid
-              ? `  ·  ${formatDisplayDate(fromDate)} – ${formatDisplayDate(toDate)}`
-              : ""}
-          </Text>
-        </View>
+      <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+        <View style={{ maxWidth: 900, width: "100%", alignSelf: "center", flex: 1 }}>
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            fromDate={fromDate}
+            toDate={toDate}
+            onFromChange={(d) => {
+              setFromDate(d);
+            }}
+            onToChange={(d) => {
+              setToDate(d);
+            }}
+          />
 
-        {/* Date Range Filter */}
-        <DateRangeFilter
-          fromDate={fromDate}
-          toDate={toDate}
-          onFromChange={(d) => { setFromDate(d); }}
-          onToChange={(d) => { setToDate(d); }}
-        />
+          {/* Subtle total transaction count */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingHorizontal: 16,
+              paddingTop: 10,
+              paddingBottom: 4,
+            }}
+          >
+            <Text style={{ fontSize: 13, color: "#6b7280", fontWeight: "600" }}>
+              {transactions.length}{" "}
+              {transactions.length === 1 ? "transaction" : "transactions"}
+            </Text>
+          </View>
 
         {/* Content */}
         {!rangeValid ? (
@@ -277,12 +299,22 @@ export default function TransactionsScreen() {
             </Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 32 }}>
+          <ScrollView
+            contentContainerStyle={{
+              padding: 16,
+              gap: 16,
+              paddingBottom: 32,
+            }}
+          >
             {days.map((day) => (
               <View key={day} style={{ gap: 8 }}>
                 {/* Date header */}
                 <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
                 >
                   <Text
                     style={{
@@ -299,7 +331,7 @@ export default function TransactionsScreen() {
                   />
                   <Text style={{ fontSize: 12, color: "#9ca3af" }}>
                     {currency(
-                      grouped[day].reduce((s, t) => s + t.total_price, 0),
+                      grouped[day].reduce((s, t) => s + t.total_price, 0)
                     )}
                   </Text>
                 </View>
@@ -372,6 +404,7 @@ export default function TransactionsScreen() {
                                   paddingVertical: 2,
                                   borderWidth: 1,
                                   borderColor: "#bbf7d0",
+                                  maxWidth: 160,
                                 }}
                               >
                                 <Text
@@ -395,6 +428,7 @@ export default function TransactionsScreen() {
                                   paddingVertical: 2,
                                   borderWidth: 1,
                                   borderColor: "#fde68a",
+                                  maxWidth: 160,
                                 }}
                               >
                                 <Text
@@ -455,6 +489,7 @@ export default function TransactionsScreen() {
             <View style={{ height: 24 }} />
           </ScrollView>
         )}
+        </View>
       </View>
     </KeyboardAvoidingView>
   );

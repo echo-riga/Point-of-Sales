@@ -4,17 +4,19 @@
     "slug": "MyApp",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "./assets/images/icons.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "androidStatusBar": {
       "barStyle": "light-content",
-      "backgroundColor": "#00000000",
+      "backgroundColor": "#16a34a",
       "translucent": true
     },
     "androidNavigationBar": {
-      "visible": "immersive"
+      "visible": "leanback",
+      "backgroundColor": "#f9fafb",
+      "barStyle": "dark"
     },
     "ios": {
       "supportsTablet": true
@@ -22,12 +24,12 @@
     "android": {
       "package": "com.echo.myapp",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icons.png",
-        "backgroundColor": "#E6F4FE"
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false,
-       "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "output": "static",
@@ -38,17 +40,18 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icons.png",
-          "imageWidth": 200,
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 220,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#ffffff"
           }
         }
       ],
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-screen-orientation"
     ],
     "experiments": {
       "typedRoutes": true,

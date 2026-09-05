@@ -82,6 +82,7 @@ function AmountNumpad({
 }: {
   value: string;
   onChange: (v: string) => void;
+  isPrice?: boolean;
 }) {
   const handleKey = (key: string) => {
     if (key === "⌫") {
@@ -186,7 +187,7 @@ function AmountNumpad({
   );
 }
 
-// ── Date Range Filter (list filter bar) ──────────────────────────────────────
+// ── Date Range Filter ────────────────────────────────────────────────────────
 function DateRangeFilter({
   fromDate,
   toDate,
@@ -209,8 +210,9 @@ function DateRangeFilter({
       style={{
         backgroundColor: "white",
         paddingHorizontal: 16,
-        paddingVertical: 14,
-        elevation: 1,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#e5e7eb",
       }}
     >
       <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
@@ -221,13 +223,13 @@ function DateRangeFilter({
             borderWidth: 1.5,
             borderColor: "#fecaca",
             borderRadius: 10,
-            paddingVertical: 10,
+            paddingVertical: 8,
             paddingHorizontal: 12,
             backgroundColor: "#fef2f2",
           }}
         >
           <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>FROM</Text>
-          <Text style={{ fontWeight: "700", color: "#dc2626", fontSize: 14 }}>
+          <Text style={{ fontWeight: "700", color: "#dc2626", fontSize: 13 }}>
             {formatDateLabel(fromDate)}
           </Text>
         </TouchableOpacity>
@@ -241,13 +243,13 @@ function DateRangeFilter({
             borderWidth: 1.5,
             borderColor: "#fecaca",
             borderRadius: 10,
-            paddingVertical: 10,
+            paddingVertical: 8,
             paddingHorizontal: 12,
             backgroundColor: "#fef2f2",
           }}
         >
           <Text style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>TO</Text>
-          <Text style={{ fontWeight: "700", color: "#dc2626", fontSize: 14 }}>
+          <Text style={{ fontWeight: "700", color: "#dc2626", fontSize: 13 }}>
             {formatDateLabel(toDate)}
           </Text>
         </TouchableOpacity>
@@ -315,7 +317,6 @@ function FormDateField({
             {formatDateLabel(value)}
           </Text>
         </View>
-
       </TouchableOpacity>
 
       {show && (
@@ -388,11 +389,11 @@ export default function ExpensesScreen() {
   const handleSave = () => {
     const amount = parseFloat(formAmount);
     if (!formDescription.trim()) {
-      Alert.alert("Validation", "Description is required.");
+      Alert.alert("Notice", "Description is required.");
       return;
     }
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert("Validation", "Enter a valid amount greater than 0.");
+      Alert.alert("Notice", "Enter a valid amount.");
       return;
     }
     if (editTarget) {
@@ -426,7 +427,7 @@ export default function ExpensesScreen() {
             load();
           },
         },
-      ],
+      ]
     );
   };
 
@@ -436,55 +437,48 @@ export default function ExpensesScreen() {
     isValidDate(formDate);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f3f4f6" }}>
-      {/* Summary bar */}
-      <View
-        style={{
-          backgroundColor: "#dc2626",
-          paddingHorizontal: 20,
-          paddingVertical: 16,
-          alignItems: "center",
-          gap: 2,
-        }}
-      >
-        <Text style={{ color: "#fecaca", fontSize: 11, letterSpacing: 1 }}>
-          TOTAL EXPENSES
-        </Text>
-        <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
-          {currency(totalFiltered)}
-        </Text>
-        <Text style={{ color: "#fca5a5", fontSize: 12 }}>
-          {expenses.length} record{expenses.length !== 1 ? "s" : ""}
-          {rangeValid
-            ? `  ·  ${formatDisplayDate(fromDate)} – ${formatDisplayDate(toDate)}`
-            : ""}
-        </Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+      <View style={{ maxWidth: 900, width: "100%", alignSelf: "center", flex: 1 }}>
+        {/* Date Range Filter */}
+        <DateRangeFilter
+          fromDate={fromDate}
+          toDate={toDate}
+          onFromChange={setFromDate}
+          onToChange={setToDate}
+        />
 
-      {/* Date Range Filter */}
-      <DateRangeFilter
-        fromDate={fromDate}
-        toDate={toDate}
-        onFromChange={setFromDate}
-        onToChange={setToDate}
-      />
-
-      {/* Content */}
-      {!rangeValid ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 8 }}>
-          <Text style={{ fontSize: 32 }}>📅</Text>
-          <Text style={{ color: "#9ca3af", fontSize: 14 }}>Enter a valid date range above</Text>
-        </View>
-      ) : expenses.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 8 }}>
-          <Text style={{ fontSize: 40 }}>💸</Text>
-          <Text style={{ fontSize: 16, fontWeight: "700", color: "#9ca3af" }}>No expenses found</Text>
-          <Text style={{ color: "#d1d5db", fontSize: 13, textAlign: "center", paddingHorizontal: 32 }}>
-            Tap + to log an expense, or adjust the date range
+        {/* Subtle count & total row */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingTop: 10,
+            paddingBottom: 4,
+          }}
+        >
+          <Text style={{ fontSize: 13, color: "#6b7280", fontWeight: "600" }}>
+            {expenses.length} {expenses.length === 1 ? "expense" : "expenses"}
+          </Text>
+          <Text style={{ fontSize: 13, color: "#dc2626", fontWeight: "700" }}>
+            Total: {currency(totalFiltered)}
           </Text>
         </View>
-      ) : (
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 100 }}>
+
+        {/* Content */}
+        {!rangeValid ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 8 }}>
+            <Text style={{ fontSize: 32 }}>📅</Text>
+            <Text style={{ color: "#9ca3af", fontSize: 14 }}>Enter a valid date range</Text>
+          </View>
+        ) : expenses.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 8 }}>
+            <Text style={{ fontSize: 40 }}>💸</Text>
+            <Text style={{ fontSize: 16, fontWeight: "700", color: "#9ca3af" }}>No expenses found</Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 100 }}>
           {days.map((day) => {
             const dayTotal = grouped[day].reduce((s, e) => s + e.amount, 0);
             return (
@@ -502,11 +496,11 @@ export default function ExpensesScreen() {
                 <View
                   style={{
                     backgroundColor: "white",
-                    borderRadius: 14,
+                    borderRadius: 12,
                     overflow: "hidden",
-                    elevation: 2,
+                    elevation: 1,
                     shadowColor: "#000",
-                    shadowOpacity: 0.05,
+                    shadowOpacity: 0.04,
                     shadowRadius: 4,
                   }}
                 >
@@ -517,56 +511,52 @@ export default function ExpensesScreen() {
                           flexDirection: "row",
                           alignItems: "center",
                           paddingHorizontal: 16,
-                          paddingVertical: 14,
+                          paddingVertical: 12,
                           gap: 12,
                         }}
                       >
                         <View
                           style={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 21,
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
                             backgroundColor: "#fef2f2",
                             alignItems: "center",
                             justifyContent: "center",
                           }}
                         >
-                          <Text style={{ fontSize: 18 }}>💸</Text>
+                          <Text style={{ fontSize: 16 }}>💸</Text>
                         </View>
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text
-                            style={{ fontWeight: "600", color: "#111827", fontSize: 15 }}
-                            numberOfLines={1}
-                          >
+
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: "600", color: "#111827", fontSize: 14 }}>
                             {expense.description}
                           </Text>
-                          <Text style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
-                            #{expense.id}
+                          <Text style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+                            {formatDisplayDate(expense.date)}
                           </Text>
                         </View>
-                        <View style={{ alignItems: "flex-end", flexDirection: "row", gap: 4 }}>
-                          <Text
-                            style={{ fontWeight: "bold", color: "#dc2626", fontSize: 16, alignSelf: "center" }}
-                          >
-                            {currency(expense.amount)}
-                          </Text>
+
+                        <Text style={{ fontWeight: "bold", color: "#dc2626", fontSize: 15 }}>
+                          {currency(expense.amount)}
+                        </Text>
+
+                        <View style={{ flexDirection: "row", gap: 2 }}>
                           <IconButton
                             icon="pencil-outline"
                             size={18}
                             iconColor="#6b7280"
                             onPress={() => openEdit(expense)}
-                            style={{ margin: 0 }}
                           />
                           <IconButton
                             icon="trash-can-outline"
                             size={18}
                             iconColor="#ef4444"
                             onPress={() => handleDelete(expense)}
-                            style={{ margin: 0 }}
                           />
                         </View>
                       </View>
-                      {i < grouped[day].length - 1 && <Divider style={{ marginLeft: 70 }} />}
+                      {i < grouped[day].length - 1 && <Divider style={{ marginLeft: 64 }} />}
                     </View>
                   ))}
                 </View>
@@ -575,126 +565,80 @@ export default function ExpensesScreen() {
           })}
         </ScrollView>
       )}
+      </View>
 
-      {/* FAB */}
+      {/* FAB at Bottom Right */}
       <FAB
         icon="plus"
         label="Add Expense"
+        color="#ffffff"
         style={{
           position: "absolute",
-          right: 16,
           bottom: 24,
+          right: 24,
           backgroundColor: "#dc2626",
-          borderRadius: 16,
+          borderRadius: 28,
         }}
-        color="white"
         onPress={openAdd}
       />
 
-      {/* Add / Edit Modal */}
+      {/* Add / Edit Expense Dialog */}
       <Portal>
         <Dialog
           visible={modalVisible}
           onDismiss={closeModal}
-          style={{ width: 360, alignSelf: "center" }}
+          style={{ width: 380, alignSelf: "center" }}
         >
-          {/* Compact header row with date picker inline */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingHorizontal: 24,
-              paddingTop: 20,
-              paddingBottom: 4,
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: "bold", color: "#dc2626" }}>
-              {editTarget ? "Edit Expense" : "Add Expense"}
-            </Text>
+          <Dialog.Title style={{ fontWeight: "bold", color: "#dc2626" }}>
+            {editTarget ? "Edit Expense" : "New Expense"}
+          </Dialog.Title>
+          <Dialog.Content style={{ gap: 10 }}>
             <FormDateField value={formDate} onChange={setFormDate} />
-          </View>
 
-          <Dialog.Content style={{ gap: 8, paddingTop: 8 }}>
-            {/* Description */}
-            <View
+            <RNTextInput
+              placeholder="Expense Description"
+              value={formDescription}
+              onChangeText={setFormDescription}
               style={{
-                borderWidth: 1.5,
-                borderColor: formDescription.trim() ? "#fca5a5" : "#fecaca",
+                borderWidth: 1,
+                borderColor: "#d1d5db",
                 borderRadius: 8,
-                paddingHorizontal: 14,
+                paddingHorizontal: 12,
                 paddingVertical: 8,
-                backgroundColor: "white",
+                fontSize: 14,
+                backgroundColor: "#ffffff",
               }}
-            >
-              <Text style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 1, marginBottom: 2 }}>
-                DESCRIPTION
-              </Text>
-              <RNTextInput
-                value={formDescription}
-                onChangeText={setFormDescription}
-                placeholder="e.g. Ink cartridge, Electricity bill"
-                placeholderTextColor="#d1d5db"
-                autoFocus={!editTarget}
-                style={{ fontSize: 15, color: "#111827", padding: 0, margin: 0 }}
-              />
-            </View>
+            />
 
-            {/* Amount display */}
             <View
               style={{
                 borderWidth: 1.5,
                 borderColor: "#fecaca",
                 borderRadius: 8,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
+                padding: 10,
                 backgroundColor: "#fef2f2",
-                flexDirection: "row",
                 alignItems: "center",
-                justifyContent: "space-between",
               }}
             >
-              <View>
-                <Text style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 1 }}>AMOUNT</Text>
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: "bold",
-                    color: formAmount ? "#b91c1c" : "#fca5a5",
-                    marginTop: 1,
-                  }}
-                >
-                  ₱{formAmount === "" ? "0.00" : parseFloat(formAmount || "0").toFixed(2)}
-                </Text>
-              </View>
-              {formAmount !== "" && (
-                <TouchableOpacity
-                  onPress={() => setFormAmount("")}
-                  style={{
-                    backgroundColor: "#fecaca",
-                    borderRadius: 6,
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                  }}
-                >
-                  <Text style={{ fontSize: 12, color: "#dc2626", fontWeight: "600" }}>Clear</Text>
-                </TouchableOpacity>
-              )}
+              <Text style={{ fontSize: 10, color: "#9ca3af", letterSpacing: 1 }}>AMOUNT</Text>
+              <Text style={{ fontSize: 24, fontWeight: "bold", color: formAmount ? "#b91c1c" : "#9ca3af" }}>
+                ₱{formAmount === "" ? "0.00" : parseFloat(formAmount).toFixed(2)}
+              </Text>
             </View>
 
-            {/* Built-in numpad */}
-            <AmountNumpad value={formAmount} onChange={setFormAmount} />
+            <AmountNumpad value={formAmount} onChange={setFormAmount} isPrice />
           </Dialog.Content>
-
-          <Dialog.Actions style={{ paddingTop: 4, paddingBottom: 12 }}>
-            <Button onPress={closeModal} textColor="#6b7280">Cancel</Button>
+          <Dialog.Actions>
+            <Button onPress={closeModal} textColor="#6b7280">
+              Cancel
+            </Button>
             <Button
               mode="contained"
               buttonColor="#dc2626"
               disabled={!isFormValid}
               onPress={handleSave}
             >
-              {editTarget ? "Save Changes" : "Add"}
+              Save
             </Button>
           </Dialog.Actions>
         </Dialog>

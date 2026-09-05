@@ -126,8 +126,16 @@ export default function TransactionDetailScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f3f4f6" }}>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: 16,
+          gap: 16,
+          maxWidth: 800,
+          width: "100%",
+          alignSelf: "center",
+        }}
+      >
         {/* Header card */}
         <View
           style={{

@@ -1,15 +1,10 @@
 // app/about.tsx
 import { ScrollView, View } from "react-native";
-import { Divider, Text } from "react-native-paper";
+import { Text } from "react-native-paper";
 
 export default function AboutScreen() {
   return (
     <ScrollView contentContainerStyle={{ padding: 24, gap: 12 }}>
-      <Text variant="headlineSmall" style={{ fontWeight: "bold" }}>
-        About
-      </Text>
-      <Divider />
-
       <View style={{ gap: 8 }}>
         <Row label="System" value="Point of Sale System (POS)" />
         <Row
