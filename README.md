@@ -1,72 +1,65 @@
-# POS — Point of Sale App
+# POS - Point of Sale
 
-A full-featured Point of Sale app built for local print shops. Manage products, record transactions, track expenses, and monitor profits — all stored locally on device.
-
-> Built for a printing service client. Feel free to download and try it out.
-
----
-
-## Download
-**[Download Latest APK](https://github.com/echo-riga/POS/releases/latest)**
-
-> iOS version is not publicly distributed. Contact me if you need it.
-
----
-
-## Demo
-<!-- Replace with your actual demo video or gif -->
-<video src="https://github.com/user-attachments/assets/2019c76f-022d-437f-b2a4-aa6bfca68b89" controls autoplay loop muted width="100%"></video>
-
----
+An offline tablet point-of-sale app built for a local printing service. Cashiers manage products, record sales and expenses, and review revenue and profit using data stored on the device.
 
 ## Features
 
-**Dashboard**
-- Revenue, orders, and items sold stats
-- Expense tracking with net profit calculation
-- Date range filter (from/to) for all metrics
-- Revenue by day bar chart
-- Top items ranking
-- Payment method breakdown
+- Product, category, and subcategory management with touch-friendly item tiles.
+- Cart, item quantities and unit prices, checkout, and change calculation.
+- Configurable payment methods with optional reference numbers.
+- Transaction history and item-level details.
+- Date-filtered revenue, order counts, daily sales, top items, and payment breakdowns.
+- Expense records, daily subtotals, and net profit calculations.
+- PIN-protected dashboard and JSON backup/restore through native file sharing.
 
-**Products**
-- Full CRUD — add, edit, delete products
-- Category and subcategory management
+Built with Expo SDK 54, React Native, TypeScript, Expo Router, React Native Paper, Expo SQLite, and Zustand. No backend server or account is required for sales data.
 
-**Transactions**
-- Transaction history and logging
-- Multiple payment type support
-- Optional reference number per payment type (e.g. GCash, bank transfer)
+## Download and demo
 
-**Expenses**
-- Log daily expenses with description and amount
-- Date range filter to view expenses by period
-- Per-day grouping with daily subtotals
-- Edit and delete expense records
+Check [GitHub Releases](https://github.com/echo-riga/Point-of-Sales/releases) for published Android builds. The repository does not guarantee that a release is available.
 
-**Settings**
-- Manage payment types (add/delete)
-- Toggle reference number requirement per payment type
-- Seed default product data
-- Clear all data
+[Watch the demo](https://github.com/user-attachments/assets/2019c76f-022d-437f-b2a4-aa6bfca68b89).
 
----
+The interface targets Android tablets in portrait and landscape. Phone layouts and iOS distribution are not supported by the documented release workflow.
 
-## Built With
-- [React Native](https://reactnative.dev/) + [Expo](https://expo.dev/)
-- [React Native Paper](https://callstack.github.io/react-native-paper/) — UI library
-- [Expo SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/) — local database
+## Run locally
 
----
+Use Node.js 22 LTS, npm, and an Android tablet or tablet emulator.
 
-## Compatibility
-| Platform | Support |
-|---|---|
-| Android (Tablet) | ✅ Landscape + Portrait |
-| Android (Phone) | ⚠️ Not supported |
-| iOS | 📩 Contact me |
+```sh
+npm ci
+npm start
+```
 
----
+Connect a compatible Expo client or use a native Android development build:
 
-## Contact
-For iOS version or inquiries, reach out via GitHub issues or contact me directly.
+```sh
+npm run android
+```
+
+Native Android builds require the Android SDK and a configured emulator or connected device. No environment variables are required for the local database.
+
+## Build an APK
+
+With EAS CLI installed and authenticated to your own Expo project:
+
+```sh
+eas build --platform android --profile preview
+```
+
+The preview profile in [eas.json](eas.json) produces an APK. Review the Expo project association and application identifiers in [app.json](app.json) before building under another account.
+
+## Source layout
+
+| Path | Purpose |
+| --- | --- |
+| [app](app) | Ordering, checkout, products, dashboard, transactions, and expenses |
+| [services](services) | SQLite initialization and product, payment, transaction, and expense queries |
+| [context](context) | Shared application state |
+| [components](components) | Reusable interface components |
+
+## Data and verification
+
+Data stays on the device; there is no cloud synchronization. Export a backup before clearing data or uninstalling. Restoring a backup replaces current records.
+
+Run npm run lint for static checks. There is no automated test script. Verify checkout, transaction totals, expense filters, and backup/restore on a tablet using disposable data.
